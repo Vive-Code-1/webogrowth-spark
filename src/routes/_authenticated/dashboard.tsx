@@ -706,12 +706,30 @@ function Dashboard() {
               <p className="py-3 text-center text-xs text-muted-foreground">No ideas yet. Capture one below!</p>
             ) : (
               <ul className="space-y-2">
-                {data.ideas.slice(0, 4).map((i: any) => (
-                  <li key={i.id} className="rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
-                    <div className="truncate text-sm font-medium">{i.title}</div>
-                    {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
-                  </li>
-                ))}
+                {data.ideas.slice(0, 4).map((i: any) => {
+                  const done = i.status === "converted";
+                  const busy = pendingIdeas.has(i.id);
+                  return (
+                    <li key={i.id} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
+                      {busy ? (
+                        <span className="mt-0.5 grid h-4 w-4 place-items-center">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                        </span>
+                      ) : (
+                        <Checkbox
+                          className="mt-0.5"
+                          checked={done}
+                          onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v })}
+                          disabled={busy}
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
+                        {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {/* Quick capture */}
