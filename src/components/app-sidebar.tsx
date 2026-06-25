@@ -116,6 +116,18 @@ export function AppSidebar() {
           {/* soft divider gradient */}
           <div className="mx-2 mb-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           <SidebarMenu className="gap-1.5">
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/admin"}
+                  tooltip="Admin"
+                  className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0"
+                >
+                  <Row it={{ title: "Admin", url: "/admin", icon: ShieldUserIcon }} active={pathname === "/admin"} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
