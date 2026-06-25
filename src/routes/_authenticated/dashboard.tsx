@@ -251,7 +251,7 @@ function Dashboard() {
                   </div>
                 )}
 
-                <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-2 scrollbar-brand">
                   {visibleTasks.map((t: any) => {
                     const done = t.status === "done";
                     const isSel = selected.has(t.id);
