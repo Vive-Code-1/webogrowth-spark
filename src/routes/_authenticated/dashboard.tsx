@@ -152,8 +152,47 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
-  // per-row in-flight tracking so each challenge has its own loading state
+  // per-row in-flight tracking so each challenge/idea has its own loading state
   const [pendingChallenges, setPendingChallenges] = useState<Set<string>>(new Set());
+  const [pendingIdeas, setPendingIdeas] = useState<Set<string>>(new Set());
+
+  const toggleIdea = useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await supabase
+        .from("ideas")
+        .update({ status: done ? "converted" : "new" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, done }) => {
+      setPendingIdeas((p) => { const n = new Set(p); n.add(id); return n; });
+      await qc.cancelQueries({ queryKey: ["dashboard"] });
+      const prev = qc.getQueryData<any>(["dashboard"]);
+      qc.setQueryData<any>(["dashboard"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          ideas: old.ideas.map((i: any) =>
+            i.id === id ? { ...i, status: done ? "converted" : "new" } : i
+          ),
+        };
+      });
+      return { prev };
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+    },
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
+      toast.error(e?.message ?? "Failed");
+    },
+    onSettled: (_d, _e, vars) => {
+      setPendingIdeas((p) => { const n = new Set(p); n.delete(vars.id); return n; });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
 
   const toggleChallenge = useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
@@ -298,6 +337,12 @@ function Dashboard() {
   const taskPct = Math.min(100, Math.round(doneToday / Number(target.target_tasks) * 100));
 
   const activeChallenges = data.challenges.filter((c: any) => c.status === "active");
+  // Show active first, then recently completed — so checkbox stays available to reopen
+  const visibleChallenges = [...data.challenges].sort((a: any, b: any) => {
+    if (a.status === "active" && b.status !== "active") return -1;
+    if (b.status === "active" && a.status !== "active") return 1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
 
   // Activity stream — recent completed tasks + completed challenges (last 10)
   const activityItems = useMemo(() => {
@@ -512,11 +557,11 @@ function Dashboard() {
                 </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
-              {activeChallenges.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">No active challenges.</p>
+              {visibleChallenges.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No challenges yet.</p>
               ) : (
                 <ul className="space-y-2">
-                  {activeChallenges.slice(0, 4).map((c: any) => {
+                  {visibleChallenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
                     const done = c.status === "completed";
@@ -661,12 +706,30 @@ function Dashboard() {
               <p className="py-3 text-center text-xs text-muted-foreground">No ideas yet. Capture one below!</p>
             ) : (
               <ul className="space-y-2">
-                {data.ideas.slice(0, 4).map((i: any) => (
-                  <li key={i.id} className="rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
-                    <div className="truncate text-sm font-medium">{i.title}</div>
-                    {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
-                  </li>
-                ))}
+                {data.ideas.slice(0, 4).map((i: any) => {
+                  const done = i.status === "converted";
+                  const busy = pendingIdeas.has(i.id);
+                  return (
+                    <li key={i.id} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
+                      {busy ? (
+                        <span className="mt-0.5 grid h-4 w-4 place-items-center">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                        </span>
+                      ) : (
+                        <Checkbox
+                          className="mt-0.5"
+                          checked={done}
+                          onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v })}
+                          disabled={busy}
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
+                        {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {/* Quick capture */}
