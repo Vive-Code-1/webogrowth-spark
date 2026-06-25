@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { bnRelative, urgencyLevel } from "@/lib/format";
+import { ListSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/challenges")({
   head: () => ({ meta: [{ title: "Challenges · WeboGrowth" }] }),
