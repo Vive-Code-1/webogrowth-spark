@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Check, Clock, Play, Square, ArrowUpDown, Undo2, Flame, Wallet,
-  ArrowRight, CalendarDays,
+  Check, Clock, ArrowUpDown, Undo2, Flame, Wallet,
+  ArrowRight, CalendarDays, Lightbulb, Save,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,8 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { bnRelative, urgencyLevel } from "@/lib/format";
 import { fmtMoney, fmtMins, diffMinutes } from "@/lib/money";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · WeboGrowth" }] }),
@@ -45,21 +48,21 @@ function Dashboard() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [, force] = useState(0);
-
-  // tick every second for live timer display
-  useEffect(() => { const i = setInterval(() => force((x) => x + 1), 1000); return () => clearInterval(i); }, []);
+  const [hoursInput, setHoursInput] = useState("");
+  const [minsInput, setMinsInput] = useState("");
+  const [sessionNote, setSessionNote] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [tasks, plans, challenges, sessions, txns, target] = await Promise.all([
+      const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
         supabase.from("challenges").select("*").eq("status", "active").order("deadline", { ascending: true }),
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
+        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(4),
       ]);
       return {
         tasks: tasks.data ?? [],
@@ -68,6 +71,7 @@ function Dashboard() {
         sessions: sessions.data ?? [],
         txns: txns.data ?? [],
         target: target.data,
+        ideas: ideas.data ?? [],
       };
     },
   });
@@ -89,29 +93,43 @@ function Dashboard() {
     }),
   });
 
-  const startTimer = useMutation({
-    mutationFn: async () => {
+  const logHours = useMutation({
+    mutationFn: async ({ minutes, note }: { minutes: number; note: string }) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
+      const end = new Date();
+      const start = new Date(end.getTime() - minutes * 60000);
       const { error } = await supabase.from("work_sessions").insert({
-        user_id: u.user.id, start_time: new Date().toISOString(), is_running: true,
-        project_name: "Quick session",
+        user_id: u.user.id,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        is_running: false,
+        total_minutes: minutes,
+        project_name: note || "Manual entry",
       });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Timer started ▶"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      setHoursInput(""); setMinsInput(""); setSessionNote("");
+      toast.success("Work hours logged ✓");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to log"),
   });
 
-  const stopTimer = useMutation({
-    mutationFn: async (s: any) => {
-      const end = new Date();
-      const total = Math.max(0, diffMinutes(s.start_time, end) - s.dashboard_minutes);
-      const { error } = await supabase.from("work_sessions").update({
-        end_time: end.toISOString(), is_running: false, total_minutes: total,
-      }).eq("id", s.id);
+  const setTaskDate = useMutation({
+    mutationFn: async ({ id, date }: { id: string; date: Date | undefined }) => {
+      const { error } = await supabase.from("tasks").update({
+        due_date: date ? date.toISOString() : null,
+      }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Session saved ✓"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Date updated");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
   const visibleTasks = useMemo(() => {
@@ -128,7 +146,7 @@ function Dashboard() {
   if (isLoading || !data) return <div className="text-muted-foreground">Loading...</div>;
 
   const today = startOfDay();
-  const running = data.sessions.find((s: any) => s.is_running);
+  // (live timer removed — hours are logged manually)
 
   const todayMins = data.sessions.reduce((a: number, s: any) => {
     if (new Date(s.start_time) < today && !s.is_running) return a;
@@ -186,17 +204,9 @@ function Dashboard() {
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         {/* LEFT — main */}
         <div className="space-y-6">
-          {/* hero */}
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
-              <h1 className="font-display text-4xl font-black leading-tight sm:text-5xl">
-                Make Things <span className="text-gradient">Simple!</span>
-              </h1>
-              <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-                আজকের কাজ, সময়, আয়—ব্যয় সব এক জায়গায়। Plan smart, ship daily.
-              </p>
-            </div>
-            <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 self-start rounded-full px-6 py-3 text-sm font-medium text-white transition hover:scale-[1.03] sm:self-end">
+          {/* quick action bar */}
+          <div className="flex items-center justify-end">
+            <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white transition hover:scale-[1.03]">
               <HugeiconsIcon icon={PlusSignIcon} size={18} strokeWidth={2} /> New task
             </Link>
           </div>
@@ -275,7 +285,22 @@ function Dashboard() {
                             <div className={`mt-1 font-semibold ${done ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
                             {t.description && <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t.description}</div>}
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              {t.due_date && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{bnRelative(t.due_date)}</span>}
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 ring-1 ring-white/10 hover:ring-primary/40 transition">
+                                    <CalendarDays className="h-3 w-3" />
+                                    {t.due_date ? bnRelative(t.due_date) : "Set date"}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={t.due_date ? new Date(t.due_date) : undefined}
+                                    onSelect={(d) => setTaskDate.mutate({ id: t.id, date: d })}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
                               <span className={`rounded-full px-2 py-0.5 ${t.priority === "high" ? "bg-destructive/20 text-destructive" : t.priority === "medium" ? "bg-warning/20 text-warning" : "bg-info/20 text-info"}`}>
                                 {t.priority === "high" ? "High priority" : t.priority === "medium" ? "Medium" : "Low"}
                               </span>
@@ -317,32 +342,59 @@ function Dashboard() {
               <h3 className="font-display font-semibold">Work session</h3>
               <Link to="/time-tracking" className="text-xs text-primary hover:underline">Details →</Link>
             </div>
-            {running ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl gradient-cool">
-                    <Clock className="h-6 w-6 animate-pulse text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xs uppercase tracking-wider text-success">● Live</div>
-                    <div className="font-display text-2xl font-bold">{fmtMins(diffMinutes(running.start_time, new Date()))}</div>
-                    <div className="text-xs text-muted-foreground">{running.project_name ?? "Untitled"}</div>
-                  </div>
+            <div className="rounded-xl bg-white/5 p-4 text-center">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Today's logged</div>
+              <div className="font-display text-2xl font-bold">{fmtMins(todayMins)}</div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="text-xs text-muted-foreground">Log hours worked today</div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input type="number" min={0} max={24} placeholder="Hrs" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="h-10 bg-white/5" />
                 </div>
-                <Button onClick={() => stopTimer.mutate(running)} disabled={stopTimer.isPending} className="mt-4 w-full gradient-warm text-white">
-                  <Square className="mr-1.5 h-4 w-4" /> Stop & Save
-                </Button>
-              </>
+                <div className="flex-1">
+                  <Input type="number" min={0} max={59} placeholder="Min" value={minsInput} onChange={(e) => setMinsInput(e.target.value)} className="h-10 bg-white/5" />
+                </div>
+              </div>
+              <Input placeholder="What did you work on? (optional)" value={sessionNote} onChange={(e) => setSessionNote(e.target.value)} className="h-10 bg-white/5" />
+              <Button
+                onClick={() => {
+                  const h = parseInt(hoursInput || "0", 10);
+                  const m = parseInt(minsInput || "0", 10);
+                  const total = (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+                  if (total <= 0) return toast.error("Enter hours or minutes");
+                  logHours.mutate({ minutes: total, note: sessionNote });
+                }}
+                disabled={logHours.isPending}
+                className="w-full gradient-blue text-white glow-blue"
+              >
+                <Save className="mr-1.5 h-4 w-4" /> Log hours
+              </Button>
+            </div>
+          </section>
+
+          {/* Recent ideas */}
+          <section className="glass-panel rounded-2xl p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-full gradient-warm">
+                  <Lightbulb className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-display font-semibold">Recent ideas</h3>
+              </div>
+              <Link to="/ideas" className="text-xs text-primary hover:underline">All →</Link>
+            </div>
+            {data.ideas.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">No ideas yet. Capture one!</p>
             ) : (
-              <>
-                <div className="rounded-xl bg-white/5 p-4 text-center">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Ready</div>
-                  <div className="font-display text-2xl font-bold">00h 00m</div>
-                </div>
-                <Button onClick={() => startTimer.mutate()} disabled={startTimer.isPending} className="mt-4 w-full gradient-blue text-white glow-blue">
-                  <Play className="mr-1.5 h-4 w-4" /> Start Timer
-                </Button>
-              </>
+              <ul className="space-y-2">
+                {data.ideas.slice(0, 4).map((i: any) => (
+                  <li key={i.id} className="rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                    <div className="truncate text-sm font-medium">{i.title}</div>
+                    {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
