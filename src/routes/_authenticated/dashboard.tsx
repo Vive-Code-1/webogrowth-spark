@@ -54,9 +54,12 @@ function Dashboard() {
   const [minsInput, setMinsInput] = useState("");
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
+  const [ideasFilter, setIdeasFilter] = useState<IdeasFilter>("incomplete");
   const [txnType, setTxnType] = useState<"income" | "expense">("income");
   const [txnAmount, setTxnAmount] = useState("");
   const [txnNote, setTxnNote] = useState("");
+  const [offline, setOffline] = useState<boolean>(isOffline());
+  const [pendingSync, setPendingSync] = useState<number>(queueSize());
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
