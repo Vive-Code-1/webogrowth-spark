@@ -113,7 +113,12 @@ function Finance() {
                   <Pie data={expByCat} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={3}>
                     {expByCat.map((_, i) => <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "oklch(0.18 0.04 265)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8 }} formatter={(v: any) => fmtMoney(v)} />
+                  <Tooltip
+                    contentStyle={{ background: "oklch(0.18 0.04 265)", border: "1px solid oklch(1 0 0 / 0.15)", borderRadius: 8, color: "#fff", padding: "6px 10px", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+                    itemStyle={{ color: "#fff", textTransform: "capitalize" }}
+                    labelStyle={{ color: "#fff", textTransform: "capitalize" }}
+                    formatter={(v: any, name: any) => [fmtMoney(v), String(name).charAt(0).toUpperCase() + String(name).slice(1)]}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
