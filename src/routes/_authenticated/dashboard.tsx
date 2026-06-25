@@ -341,7 +341,7 @@ function Dashboard() {
             <StatTile label="Today's work" value={fmtMins(todayMins)} sub={`${fmtMins(monthMins)} this month`} icon={Clock} grad="gradient-blue" to="/time-tracking" />
             <StatTile label="Net (month)" value={fmtMoney(monthNet)} sub={`+${fmtMoney(monthIncome)} / −${fmtMoney(monthExpense)}`} icon={Wallet} grad="gradient-cool" to="/finance" />
             <StatTile label="Active tasks" value={String(data.tasks.filter((t: any) => t.status !== "done").length)} sub={`${doneToday} done today`} icon={Check} grad="gradient-primary" to="/tasks" />
-            <StatTile label="Challenges" value={String(data.challenges.length)} sub="active" icon={Flame} grad="gradient-warm" to="/challenges" />
+            <StatTile label="Challenges" value={String(activeChallenges.length)} sub="active" icon={Flame} grad="gradient-warm" to="/challenges" />
           </div>
 
           {/* filter pills + task list — matching reference card style */}
