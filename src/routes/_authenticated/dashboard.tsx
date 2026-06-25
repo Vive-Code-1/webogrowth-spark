@@ -473,6 +473,31 @@ function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+
+            {/* Activity stream — recent completions */}
+            <div className="mt-4 border-t border-white/5 pt-4">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Recent activity</div>
+              {activityItems.length === 0 ? (
+                <p className="py-2 text-center text-xs text-muted-foreground">Nothing logged yet — complete a task or challenge.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {activityItems.map((a) => (
+                    <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                      <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
+                        {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm">
+                          <span className="text-muted-foreground">{a.kind === "challenge" ? "Challenge completed" : "Task done"} · </span>
+                          <span className="font-medium">{a.title}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{bnRelative(a.at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
 
           {/* Challenges + Quick income/expense */}
