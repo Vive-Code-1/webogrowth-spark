@@ -384,7 +384,7 @@ function Dashboard() {
 
   // Activity stream — merges activity_log entries (challenge toggles with before/after)
   // with recent task completions, newest first
-  const activityItems = useMemo(() => {
+  const activityItems = (() => {
     const logged = (data.activity ?? []).map((a: any) => ({
       id: `a-${a.id}`,
       kind: a.entity_type === "challenge" ? "challenge" as const : "task" as const,
@@ -397,11 +397,11 @@ function Dashboard() {
     const tasksDone = data.tasks
       .filter((t: any) => t.completed_at)
       .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, action: "complete", from: "pending", to: "done", title: t.title, at: t.completed_at as string }));
-    // de-dupe activity_log challenge entries from challenges table fallback
     return [...logged, ...tasksDone]
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
       .slice(0, 8);
-  }, [data.tasks, data.activity]);
+  })();
+
 
   // weekly hours chart (last 7 days)
   const weekData = Array.from({ length: 7 }, (_, i) => {
