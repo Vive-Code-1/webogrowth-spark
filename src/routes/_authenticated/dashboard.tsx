@@ -286,6 +286,30 @@ function Dashboard() {
     };
   }, [qc]);
 
+  // Offline queue: flush on reconnect + on mount; track online state
+  useEffect(() => {
+    const sync = async () => {
+      setOffline(isOffline());
+      if (!isOffline() && queueSize() > 0) {
+        const r = await flushQueue(() => setPendingSync(queueSize()));
+        setPendingSync(queueSize());
+        if (r.ok > 0) {
+          toast.success(`Synced ${r.ok} pending change${r.ok > 1 ? "s" : ""} ✓`);
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+        }
+      }
+    };
+    sync();
+    const onOnline = () => sync();
+    const onOffline = () => setOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [qc]);
+
   const addTxn = useMutation({
     mutationFn: async () => {
       const amount = parseFloat(txnAmount);
