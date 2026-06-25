@@ -38,13 +38,13 @@ export function AppSidebar() {
   const Row = ({ it, active }: { it: { title: string; url: string; icon: any }; active: boolean }) => (
     <Link
       to={it.url}
-      className={`group relative flex items-center gap-3 rounded-2xl px-2 py-2 transition ${
+      className={`group relative flex items-center gap-3 rounded-2xl px-2 py-2 transition group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 ${
         active ? "text-white" : "text-muted-foreground hover:text-white"
       }`}
     >
       {/* icon badge */}
       <span
-        className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${
+        className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full transition group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 ${
           active
             ? "blue-pill shadow-[0_0_24px_-4px_rgba(80,140,255,0.7)]"
             : "bg-[#0d1530] ring-1 ring-white/5 group-hover:ring-white/15"
