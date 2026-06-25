@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Check, Clock, Play, Square, Plus, ArrowUpDown, Undo2, Flame, Wallet, TrendingUp,
+  Check, Clock, Play, Square, Plus, ArrowUpDown, Undo2, Flame, Wallet,
   Sparkles, ArrowRight, Bell, CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
