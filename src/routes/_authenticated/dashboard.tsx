@@ -204,17 +204,9 @@ function Dashboard() {
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         {/* LEFT — main */}
         <div className="space-y-6">
-          {/* hero */}
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
-              <h1 className="font-display text-4xl font-black leading-tight sm:text-5xl">
-                Make Things <span className="text-gradient">Simple!</span>
-              </h1>
-              <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-                আজকের কাজ, সময়, আয়—ব্যয় সব এক জায়গায়। Plan smart, ship daily.
-              </p>
-            </div>
-            <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 self-start rounded-full px-6 py-3 text-sm font-medium text-white transition hover:scale-[1.03] sm:self-end">
+          {/* quick action bar */}
+          <div className="flex items-center justify-end">
+            <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white transition hover:scale-[1.03]">
               <HugeiconsIcon icon={PlusSignIcon} size={18} strokeWidth={2} /> New task
             </Link>
           </div>
