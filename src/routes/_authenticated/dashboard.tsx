@@ -132,7 +132,6 @@ function Dashboard() {
     mutationFn: async ({ id, date }: { id: string; date: Date | undefined }) => {
       await runOrQueue({ kind: "task.update", entityId: id, patch: { due_date: date ? date.toISOString() : null } });
     },
-    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
