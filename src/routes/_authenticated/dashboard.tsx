@@ -52,6 +52,9 @@ function Dashboard() {
   const [minsInput, setMinsInput] = useState("");
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
+  const [txnType, setTxnType] = useState<"income" | "expense">("income");
+  const [txnAmount, setTxnAmount] = useState("");
+  const [txnNote, setTxnNote] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
