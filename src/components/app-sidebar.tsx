@@ -8,11 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const items = [
-  { title: "ড্যাশবোর্ড", url: "/dashboard", icon: LayoutDashboard },
-  { title: "টাস্ক", url: "/tasks", icon: CheckSquare },
-  { title: "আইডিয়া", url: "/ideas", icon: Lightbulb },
-  { title: "প্ল্যান", url: "/plans", icon: Map },
-  { title: "চ্যালেঞ্জ", url: "/challenges", icon: Flame },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Ideas", url: "/ideas", icon: Lightbulb },
+  { title: "Plans", url: "/plans", icon: Map },
+  { title: "Challenges", url: "/challenges", icon: Flame },
 ];
 
 export function AppSidebar() {
@@ -39,7 +39,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>মেনু</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((it) => (
@@ -56,13 +56,13 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/settings"} tooltip="সেটিংস">
-              <Link to="/settings"><Settings className="h-4 w-4" /><span>সেটিংস</span></Link>
+            <SidebarMenuButton asChild isActive={pathname === "/settings"} tooltip="Settings">
+              <Link to="/settings"><Settings className="h-4 w-4" /><span>Settings</span></Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={signOut} tooltip="লগআউট">
-              <LogOut className="h-4 w-4" /><span>লগআউট</span>
+            <SidebarMenuButton onClick={signOut} tooltip="Log out">
+              <LogOut className="h-4 w-4" /><span>Log out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

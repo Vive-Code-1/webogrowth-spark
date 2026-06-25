@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { bnRelative, urgencyLevel } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/challenges")({
-  head: () => ({ meta: [{ title: "চ্যালেঞ্জ · WeboGrowth" }] }),
+  head: () => ({ meta: [{ title: "Challenges · WeboGrowth" }] }),
   component: Challenges,
 });
 
@@ -37,7 +37,7 @@ function Challenges() {
     if (!("Notification" in window)) return;
     const p = await Notification.requestPermission();
     setNotifPerm(p);
-    if (p === "granted") toast.success("নোটিফিকেশন চালু হয়েছে");
+    if (p === "granted") toast.success("Notifications enabled");
   };
 
   const { data: challenges = [], isLoading } = useQuery({
@@ -49,7 +49,6 @@ function Challenges() {
     refetchInterval: 30000,
   });
 
-  // Aggressive in-browser reminder: every minute, fire notification for challenges <24h
   useEffect(() => {
     if (notifPerm !== "granted") return;
     const fire = () => {
@@ -71,20 +70,20 @@ function Challenges() {
   const add = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("লগইন প্রয়োজন");
+      if (!user) throw new Error("Login required");
       const { error } = await supabase.from("challenges").insert({
         user_id: user.id, title, description,
         deadline: new Date(deadline).toISOString(),
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("চ্যালেঞ্জ যোগ হয়েছে 🔥"); setTitle(""); setDescription(""); setDeadline(""); qc.invalidateQueries({ queryKey: ["challenges"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { toast.success("Challenge added 🔥"); setTitle(""); setDescription(""); setDeadline(""); qc.invalidateQueries({ queryKey: ["challenges"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
   const complete = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("challenges").update({ status: "completed" }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("🎉 দারুণ!"); qc.invalidateQueries({ queryKey: ["challenges"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { toast.success("🎉 Nice work!"); qc.invalidateQueries({ queryKey: ["challenges"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
   });
 
   const del = useMutation({
@@ -96,26 +95,26 @@ function Challenges() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2"><Flame className="text-pink"/>চ্যালেঞ্জ</h1>
-          <p className="text-muted-foreground mt-1">ডেডলাইনের সাথে দৌড়ান, রিমাইন্ডার পান।</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><Flame className="text-pink"/>Challenges</h1>
+          <p className="text-muted-foreground mt-1">Race the deadline, get reminders.</p>
         </div>
         {notifPerm !== "granted" && notifPerm !== "unsupported" && (
-          <Button onClick={askNotif} variant="outline"><Bell className="h-4 w-4 mr-1"/>রিমাইন্ডার চালু করুন</Button>
+          <Button onClick={askNotif} variant="outline"><Bell className="h-4 w-4 mr-1"/>Enable reminders</Button>
         )}
       </div>
 
       <form onSubmit={(e)=>{e.preventDefault(); if(title.trim() && deadline) add.mutate();}} className="glass rounded-2xl p-4 space-y-3">
-        <Input placeholder="চ্যালেঞ্জের নাম..." value={title} onChange={(e)=>setTitle(e.target.value)} />
-        <Textarea placeholder="বিস্তারিত..." value={description} onChange={(e)=>setDescription(e.target.value)} rows={2} />
+        <Input placeholder="Challenge name..." value={title} onChange={(e)=>setTitle(e.target.value)} />
+        <Textarea placeholder="Details..." value={description} onChange={(e)=>setDescription(e.target.value)} rows={2} />
         <div className="flex flex-wrap gap-3">
           <Input type="datetime-local" required value={deadline} onChange={(e)=>setDeadline(e.target.value)} className="max-w-[240px]" />
-          <Button type="submit" className="gradient-warm text-white"><Plus className="h-4 w-4 mr-1"/>চ্যালেঞ্জ যোগ করুন</Button>
+          <Button type="submit" className="gradient-warm text-white"><Plus className="h-4 w-4 mr-1"/>Add challenge</Button>
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">লোড হচ্ছে...</p> : (
+      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
         <div className="grid gap-4 md:grid-cols-2">
-          {challenges.length === 0 && <p className="text-muted-foreground">কোনো চ্যালেঞ্জ নেই।</p>}
+          {challenges.length === 0 && <p className="text-muted-foreground">No challenges yet.</p>}
           {challenges.map((c) => {
             const u = urgencyLevel(c.deadline);
             const done = c.status === "completed";
@@ -128,7 +127,7 @@ function Challenges() {
                 {c.description && <p className="mt-2 text-sm text-muted-foreground">{c.description}</p>}
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-lg font-bold">{bnRelative(c.deadline)}</span>
-                  {!done && <Button size="sm" onClick={()=>complete.mutate(c.id)} className="gradient-cool text-white">সম্পন্ন</Button>}
+                  {!done && <Button size="sm" onClick={()=>complete.mutate(c.id)} className="gradient-cool text-white">Done</Button>}
                 </div>
               </div>
             );
