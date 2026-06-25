@@ -425,6 +425,14 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {(offline || pendingSync > 0) && (
+        <div role="status" aria-live="polite" className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs ring-1 ${offline ? "bg-warning/10 text-warning ring-warning/30" : "bg-info/10 text-info ring-info/30"}`}>
+          <span className={`h-2 w-2 rounded-full ${offline ? "bg-warning animate-pulse" : "bg-info"}`} />
+          {offline
+            ? `Offline — changes are queued${pendingSync > 0 ? ` (${pendingSync} pending)` : ""} and will sync when you're back online.`
+            : `Syncing ${pendingSync} pending change${pendingSync > 1 ? "s" : ""}…`}
+        </div>
+      )}
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
 
         {/* LEFT — main */}
