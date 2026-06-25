@@ -146,7 +146,7 @@ function Dashboard() {
   if (isLoading || !data) return <div className="text-muted-foreground">Loading...</div>;
 
   const today = startOfDay();
-  const running = data.sessions.find((s: any) => s.is_running);
+  // (live timer removed — hours are logged manually)
 
   const todayMins = data.sessions.reduce((a: number, s: any) => {
     if (new Date(s.start_time) < today && !s.is_running) return a;
