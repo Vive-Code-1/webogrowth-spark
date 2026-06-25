@@ -159,8 +159,10 @@ function Dashboard() {
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
       const { error } = await supabase
         .from("challenges")
-        .update({ status: done ? "completed" : "active", completed_at: done ? new Date().toISOString() : null })
+        .update({ status: done ? "completed" : "active" })
         .eq("id", id);
+      if (error) throw error;
+    },
       if (error) throw error;
     },
     onMutate: async ({ id, done }) => {
