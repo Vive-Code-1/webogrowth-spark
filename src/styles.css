@@ -133,15 +133,38 @@
     background-image: linear-gradient(135deg, var(--color-info), var(--color-success));
   }
   .gradient-blue {
-    background-image: linear-gradient(135deg, oklch(0.55 0.22 260), oklch(0.65 0.20 250));
+    background-image:
+      radial-gradient(120% 140% at 0% 0%, oklch(0.72 0.22 250 / 0.95), transparent 55%),
+      linear-gradient(135deg, oklch(0.55 0.26 258), oklch(0.40 0.22 268) 55%, oklch(0.30 0.16 270));
+  }
+  /* Reference "marked" gradient — dark glass pill with inner electric-blue rim */
+  .blue-pill {
+    background:
+      radial-gradient(120% 140% at 50% 0%, oklch(0.55 0.25 258 / 0.55), transparent 60%),
+      linear-gradient(180deg, oklch(0.22 0.06 265 / 0.95), oklch(0.14 0.04 265 / 0.95));
+    border: 1px solid oklch(0.62 0.22 258 / 0.55);
+    box-shadow:
+      inset 0 1px 0 oklch(0.85 0.18 250 / 0.25),
+      inset 0 0 24px oklch(0.55 0.25 258 / 0.35),
+      0 10px 30px -12px oklch(0.50 0.25 258 / 0.65);
+  }
+  .blue-highlight {
+    background:
+      radial-gradient(120% 140% at 0% 0%, oklch(0.55 0.25 258 / 0.32), transparent 55%),
+      linear-gradient(180deg, oklch(0.24 0.08 265 / 0.85), oklch(0.16 0.05 265 / 0.85));
+    border: 1px solid oklch(0.62 0.22 258 / 0.55);
+    box-shadow:
+      inset 0 1px 0 oklch(0.85 0.18 250 / 0.22),
+      inset 0 0 40px oklch(0.55 0.25 258 / 0.20),
+      0 20px 50px -25px oklch(0.50 0.25 258 / 0.55);
   }
   .text-gradient {
-    background-image: linear-gradient(135deg, oklch(0.75 0.18 250), oklch(0.70 0.20 280));
+    background-image: linear-gradient(135deg, oklch(0.78 0.18 250), oklch(0.68 0.22 275));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .glow-primary { box-shadow: 0 10px 40px -10px oklch(0.70 0.18 265 / 0.5); }
-  .glow-blue { box-shadow: 0 12px 40px -10px oklch(0.55 0.25 260 / 0.6); }
+  .glow-blue { box-shadow: 0 14px 44px -10px oklch(0.58 0.26 258 / 0.75); }
 }
 
