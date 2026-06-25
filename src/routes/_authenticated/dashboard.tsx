@@ -140,7 +140,7 @@ function Dashboard() {
       const bv = b.due_date ? new Date(b.due_date).getTime() : Infinity;
       return sortDir === "asc" ? av - bv : bv - av;
     });
-    return s.slice(0, 6);
+    return s;
   }, [data, filter, sortDir]);
 
   if (isLoading || !data) return <div className="text-muted-foreground">Loading...</div>;
