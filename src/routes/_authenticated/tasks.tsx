@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { bnRelative } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
-  head: () => ({ meta: [{ title: "টাস্ক · WeboGrowth" }] }),
+  head: () => ({ meta: [{ title: "Tasks · WeboGrowth" }] }),
   component: Tasks,
 });
 
@@ -32,14 +32,14 @@ function Tasks() {
   const add = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("লগইন প্রয়োজন");
+      if (!user) throw new Error("Login required");
       const { error } = await supabase.from("tasks").insert({
         user_id: user.id, title, priority,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("টাস্ক যোগ হয়েছে"); setTitle(""); setDueDate(""); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { toast.success("Task added"); setTitle(""); setDueDate(""); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -56,33 +56,33 @@ function Tasks() {
 
   const del = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("tasks").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("ডিলিট হয়েছে"); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
   });
 
   const prio = { high: "bg-destructive/20 text-destructive", medium: "bg-warning/20 text-warning", low: "bg-info/20 text-info" };
-  const prioLabel = { high: "উচ্চ", medium: "মাঝারি", low: "কম" };
+  const prioLabel = { high: "High", medium: "Medium", low: "Low" };
 
   return (
     <div className="space-y-6">
-      <div><h1 className="text-3xl font-bold">টাস্ক</h1><p className="text-muted-foreground mt-1">আজকের কাজগুলো ম্যানেজ করুন।</p></div>
+      <div><h1 className="text-3xl font-bold">Tasks</h1><p className="text-muted-foreground mt-1">Manage today's work.</p></div>
 
       <form onSubmit={(e)=>{e.preventDefault(); if(title.trim()) add.mutate();}} className="glass rounded-2xl p-4 grid gap-3 md:grid-cols-[1fr_140px_180px_auto]">
-        <Input placeholder="নতুন টাস্ক..." value={title} onChange={(e)=>setTitle(e.target.value)} />
+        <Input placeholder="New task..." value={title} onChange={(e)=>setTitle(e.target.value)} />
         <Select value={priority} onValueChange={(v: any)=>setPriority(v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="high">উচ্চ</SelectItem>
-            <SelectItem value="medium">মাঝারি</SelectItem>
-            <SelectItem value="low">কম</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
         <Input type="datetime-local" value={dueDate} onChange={(e)=>setDueDate(e.target.value)} />
-        <Button type="submit" className="gradient-primary text-white"><Plus className="h-4 w-4 mr-1"/>যোগ করুন</Button>
+        <Button type="submit" className="gradient-primary text-white"><Plus className="h-4 w-4 mr-1"/>Add</Button>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">লোড হচ্ছে...</p> : (
+      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
         <div className="space-y-2">
-          {tasks.length === 0 && <p className="text-muted-foreground">কোনো টাস্ক নেই।</p>}
+          {tasks.length === 0 && <p className="text-muted-foreground">No tasks yet.</p>}
           {tasks.map((t) => {
             const done = t.status === "done";
             return (

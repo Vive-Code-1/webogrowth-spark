@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "সেটিংস · WeboGrowth" }] }),
+  head: () => ({ meta: [{ title: "Settings · WeboGrowth" }] }),
   component: Settings,
 });
 
@@ -40,7 +40,7 @@ function Settings() {
     if (!user) return;
     const { error } = await supabase.from("profiles").update({ display_name: displayName, notifications_enabled: notif }).eq("id", user.id);
     if (error) return toast.error(error.message);
-    toast.success("সেভ হয়েছে");
+    toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["profile"] });
   };
 
@@ -52,20 +52,20 @@ function Settings() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div><h1 className="text-3xl font-bold">সেটিংস</h1><p className="text-muted-foreground mt-1">প্রোফাইল ও প্রেফারেন্স।</p></div>
+      <div><h1 className="text-3xl font-bold">Settings</h1><p className="text-muted-foreground mt-1">Profile and preferences.</p></div>
 
       <div className="glass rounded-2xl p-5 space-y-4">
-        <div><Label>ইমেইল</Label><Input value={email} disabled /></div>
-        <div><Label>নাম</Label><Input value={displayName} onChange={(e)=>setDisplayName(e.target.value)} /></div>
+        <div><Label>Email</Label><Input value={email} disabled /></div>
+        <div><Label>Name</Label><Input value={displayName} onChange={(e)=>setDisplayName(e.target.value)} /></div>
         <div className="flex items-center justify-between">
-          <div><Label>নোটিফিকেশন</Label><p className="text-xs text-muted-foreground">চ্যালেঞ্জ ডেডলাইন রিমাইন্ডার</p></div>
+          <div><Label>Notifications</Label><p className="text-xs text-muted-foreground">Challenge deadline reminders</p></div>
           <Switch checked={notif} onCheckedChange={setNotif} />
         </div>
-        <Button onClick={save} className="gradient-primary text-white">সেভ করুন</Button>
+        <Button onClick={save} className="gradient-primary text-white">Save</Button>
       </div>
 
       <div className="glass rounded-2xl p-5">
-        <Button variant="destructive" onClick={signOut}>লগআউট</Button>
+        <Button variant="destructive" onClick={signOut}>Log out</Button>
       </div>
     </div>
   );

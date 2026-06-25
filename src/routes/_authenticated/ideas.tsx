@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/ideas")({
-  head: () => ({ meta: [{ title: "আইডিয়া · WeboGrowth" }] }),
+  head: () => ({ meta: [{ title: "Ideas · WeboGrowth" }] }),
   component: Ideas,
 });
 
@@ -30,11 +30,11 @@ function Ideas() {
   const add = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("লগইন প্রয়োজন");
+      if (!user) throw new Error("Login required");
       const { error } = await supabase.from("ideas").insert({ user_id: user.id, title, content, tag });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("আইডিয়া সেভ হয়েছে"); setTitle(""); setContent(""); qc.invalidateQueries({ queryKey: ["ideas"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { toast.success("Idea saved"); setTitle(""); setContent(""); qc.invalidateQueries({ queryKey: ["ideas"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -47,20 +47,20 @@ function Ideas() {
 
   return (
     <div className="space-y-6">
-      <div><h1 className="text-3xl font-bold">আইডিয়া বোর্ড</h1><p className="text-muted-foreground mt-1">প্রতিটি স্পার্ক ধরে রাখুন।</p></div>
+      <div><h1 className="text-3xl font-bold">Idea board</h1><p className="text-muted-foreground mt-1">Capture every spark.</p></div>
 
       <form onSubmit={(e)=>{e.preventDefault(); if(title.trim()) add.mutate();}} className="glass rounded-2xl p-4 space-y-3">
-        <Input placeholder="আইডিয়ার শিরোনাম..." value={title} onChange={(e)=>setTitle(e.target.value)} />
-        <Textarea placeholder="বিস্তারিত..." value={content} onChange={(e)=>setContent(e.target.value)} rows={3} />
+        <Input placeholder="Idea title..." value={title} onChange={(e)=>setTitle(e.target.value)} />
+        <Textarea placeholder="Details..." value={content} onChange={(e)=>setContent(e.target.value)} rows={3} />
         <div className="flex gap-3">
-          <Input placeholder="ট্যাগ" value={tag} onChange={(e)=>setTag(e.target.value)} className="max-w-[200px]" />
-          <Button type="submit" className="gradient-primary text-white"><Plus className="h-4 w-4 mr-1"/>সেভ করুন</Button>
+          <Input placeholder="Tag" value={tag} onChange={(e)=>setTag(e.target.value)} className="max-w-[200px]" />
+          <Button type="submit" className="gradient-primary text-white"><Plus className="h-4 w-4 mr-1"/>Save</Button>
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">লোড হচ্ছে...</p> : (
+      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {ideas.length === 0 && <p className="text-muted-foreground">কোনো আইডিয়া নেই।</p>}
+          {ideas.length === 0 && <p className="text-muted-foreground">No ideas yet.</p>}
           {ideas.map((i, idx) => (
             <div key={i.id} className="glass rounded-2xl p-5 group relative">
               <div className={`mb-3 inline-block rounded-full px-3 py-1 text-xs text-white ${tagColors[idx % 3]}`}>{i.tag}</div>
