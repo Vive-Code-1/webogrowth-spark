@@ -113,7 +113,7 @@ function Challenges() {
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
+      {isLoading ? <ListSkeleton title={false} rows={4} /> : (
         <div className="grid gap-4 md:grid-cols-2">
           {challenges.length === 0 && <p className="text-muted-foreground">No challenges yet.</p>}
           {challenges.map((c) => {
