@@ -342,32 +342,59 @@ function Dashboard() {
               <h3 className="font-display font-semibold">Work session</h3>
               <Link to="/time-tracking" className="text-xs text-primary hover:underline">Details →</Link>
             </div>
-            {running ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl gradient-cool">
-                    <Clock className="h-6 w-6 animate-pulse text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xs uppercase tracking-wider text-success">● Live</div>
-                    <div className="font-display text-2xl font-bold">{fmtMins(diffMinutes(running.start_time, new Date()))}</div>
-                    <div className="text-xs text-muted-foreground">{running.project_name ?? "Untitled"}</div>
-                  </div>
+            <div className="rounded-xl bg-white/5 p-4 text-center">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Today's logged</div>
+              <div className="font-display text-2xl font-bold">{fmtMins(todayMins)}</div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="text-xs text-muted-foreground">Log hours worked today</div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input type="number" min={0} max={24} placeholder="Hrs" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="h-10 bg-white/5" />
                 </div>
-                <Button onClick={() => stopTimer.mutate(running)} disabled={stopTimer.isPending} className="mt-4 w-full gradient-warm text-white">
-                  <Square className="mr-1.5 h-4 w-4" /> Stop & Save
-                </Button>
-              </>
+                <div className="flex-1">
+                  <Input type="number" min={0} max={59} placeholder="Min" value={minsInput} onChange={(e) => setMinsInput(e.target.value)} className="h-10 bg-white/5" />
+                </div>
+              </div>
+              <Input placeholder="What did you work on? (optional)" value={sessionNote} onChange={(e) => setSessionNote(e.target.value)} className="h-10 bg-white/5" />
+              <Button
+                onClick={() => {
+                  const h = parseInt(hoursInput || "0", 10);
+                  const m = parseInt(minsInput || "0", 10);
+                  const total = (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+                  if (total <= 0) return toast.error("Enter hours or minutes");
+                  logHours.mutate({ minutes: total, note: sessionNote });
+                }}
+                disabled={logHours.isPending}
+                className="w-full gradient-blue text-white glow-blue"
+              >
+                <Save className="mr-1.5 h-4 w-4" /> Log hours
+              </Button>
+            </div>
+          </section>
+
+          {/* Recent ideas */}
+          <section className="glass-panel rounded-2xl p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-full gradient-warm">
+                  <Lightbulb className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-display font-semibold">Recent ideas</h3>
+              </div>
+              <Link to="/ideas" className="text-xs text-primary hover:underline">All →</Link>
+            </div>
+            {data.ideas.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">No ideas yet. Capture one!</p>
             ) : (
-              <>
-                <div className="rounded-xl bg-white/5 p-4 text-center">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Ready</div>
-                  <div className="font-display text-2xl font-bold">00h 00m</div>
-                </div>
-                <Button onClick={() => startTimer.mutate()} disabled={startTimer.isPending} className="mt-4 w-full gradient-blue text-white glow-blue">
-                  <Play className="mr-1.5 h-4 w-4" /> Start Timer
-                </Button>
-              </>
+              <ul className="space-y-2">
+                {data.ideas.slice(0, 4).map((i: any) => (
+                  <li key={i.id} className="rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                    <div className="truncate text-sm font-medium">{i.title}</div>
+                    {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
