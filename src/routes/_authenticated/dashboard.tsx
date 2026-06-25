@@ -285,7 +285,22 @@ function Dashboard() {
                             <div className={`mt-1 font-semibold ${done ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
                             {t.description && <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t.description}</div>}
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              {t.due_date && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{bnRelative(t.due_date)}</span>}
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 ring-1 ring-white/10 hover:ring-primary/40 transition">
+                                    <CalendarDays className="h-3 w-3" />
+                                    {t.due_date ? bnRelative(t.due_date) : "Set date"}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={t.due_date ? new Date(t.due_date) : undefined}
+                                    onSelect={(d) => setTaskDate.mutate({ id: t.id, date: d })}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
                               <span className={`rounded-full px-2 py-0.5 ${t.priority === "high" ? "bg-destructive/20 text-destructive" : t.priority === "medium" ? "bg-warning/20 text-warning" : "bg-info/20 text-info"}`}>
                                 {t.priority === "high" ? "High priority" : t.priority === "medium" ? "Medium" : "Low"}
                               </span>
