@@ -189,6 +189,8 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  const visibleTasks = useMemo(() => {
+    const all = data?.tasks ?? [];
     const f = all.filter((t: any) => filter === "all" ? true : filter === "completed" ? t.status === "done" : t.status !== "done");
     const s = [...f].sort((a: any, b: any) => {
       const av = a.due_date ? new Date(a.due_date).getTime() : Infinity;
