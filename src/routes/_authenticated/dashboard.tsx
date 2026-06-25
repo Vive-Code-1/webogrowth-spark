@@ -175,7 +175,7 @@ function Dashboard() {
         user_id: u.user.id,
         type: txnType,
         amount,
-        note: txnNote || null,
+        description: txnNote || null,
         txn_date: new Date().toISOString().slice(0, 10),
       });
       if (error) throw error;
