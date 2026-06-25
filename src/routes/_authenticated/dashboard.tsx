@@ -62,7 +62,7 @@ function Dashboard() {
       const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
-        supabase.from("challenges").select("*").eq("status", "active").order("deadline", { ascending: true }),
+        supabase.from("challenges").select("*").order("deadline", { ascending: true }),
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
@@ -152,21 +152,30 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  // per-row in-flight tracking so each challenge has its own loading state
+  const [pendingChallenges, setPendingChallenges] = useState<Set<string>>(new Set());
+
   const toggleChallenge = useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase.from("challenges").update({ status: done ? "completed" : "active" }).eq("id", id);
+      const { error } = await supabase
+        .from("challenges")
+        .update({ status: done ? "completed" : "active" })
+        .eq("id", id);
       if (error) throw error;
     },
     onMutate: async ({ id, done }) => {
+      setPendingChallenges((p) => { const n = new Set(p); n.add(id); return n; });
       await qc.cancelQueries({ queryKey: ["dashboard"] });
       const prev = qc.getQueryData<any>(["dashboard"]);
       qc.setQueryData<any>(["dashboard"], (old: any) => {
         if (!old) return old;
         return {
           ...old,
-          challenges: done
-            ? old.challenges.filter((c: any) => c.id !== id)
-            : old.challenges.map((c: any) => (c.id === id ? { ...c, status: "active" } : c)),
+          challenges: old.challenges.map((c: any) =>
+            c.id === id
+              ? { ...c, status: done ? "completed" : "active", updated_at: new Date().toISOString() }
+              : c
+          ),
         };
       });
       return { prev };
@@ -179,19 +188,52 @@ function Dashboard() {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
       toast.error(e?.message ?? "Failed");
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["dashboard"] }),
+    onSettled: (_d, _e, vars) => {
+      setPendingChallenges((p) => { const n = new Set(p); n.delete(vars.id); return n; });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
   });
 
-  // Realtime sync — challenges updates from any device
+  // Realtime sync — challenges + tasks, scoped to current user, auto-resubscribe on drop
   useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-challenges")
-      .on("postgres_changes", { event: "*", schema: "public", table: "challenges" }, () => {
-        qc.invalidateQueries({ queryKey: ["dashboard"] });
-        qc.invalidateQueries({ queryKey: ["challenges"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (cancelled || !u.user) return;
+      const uid = u.user.id;
+      const filter = `user_id=eq.${uid}`;
+      channel = supabase
+        .channel(`dashboard-stream-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "challenges", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          qc.invalidateQueries({ queryKey: ["challenges"] });
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+        })
+        .subscribe((status) => {
+          if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && !cancelled) {
+            if (channel) supabase.removeChannel(channel);
+            channel = null;
+            retry = setTimeout(() => { if (!cancelled) connect(); }, 2000);
+          }
+        });
+    };
+
+    connect();
+    const onVisible = () => { if (document.visibilityState === "visible") qc.invalidateQueries({ queryKey: ["dashboard"] }); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      if (retry) clearTimeout(retry);
+      if (channel) supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [qc]);
 
   const addTxn = useMutation({
@@ -255,6 +297,19 @@ function Dashboard() {
   const hourPct = Math.min(100, Math.round((todayMins / 60) / Number(target.target_hours) * 100));
   const taskPct = Math.min(100, Math.round(doneToday / Number(target.target_tasks) * 100));
 
+  const activeChallenges = data.challenges.filter((c: any) => c.status === "active");
+
+  // Activity stream — recent completed tasks + completed challenges (last 10)
+  const activityItems = useMemo(() => {
+    const tasksDone = data.tasks
+      .filter((t: any) => t.completed_at)
+      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.completed_at as string }));
+    const chalDone = data.challenges
+      .filter((c: any) => c.status === "completed")
+      .map((c: any) => ({ id: `c-${c.id}`, kind: "challenge" as const, title: c.title, at: (c.updated_at ?? c.created_at) as string }));
+    return [...tasksDone, ...chalDone].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
+  }, [data.tasks, data.challenges]);
+
   // weekly hours chart (last 7 days)
   const weekData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i)); d.setHours(0,0,0,0);
@@ -286,7 +341,7 @@ function Dashboard() {
             <StatTile label="Today's work" value={fmtMins(todayMins)} sub={`${fmtMins(monthMins)} this month`} icon={Clock} grad="gradient-blue" to="/time-tracking" />
             <StatTile label="Net (month)" value={fmtMoney(monthNet)} sub={`+${fmtMoney(monthIncome)} / −${fmtMoney(monthExpense)}`} icon={Wallet} grad="gradient-cool" to="/finance" />
             <StatTile label="Active tasks" value={String(data.tasks.filter((t: any) => t.status !== "done").length)} sub={`${doneToday} done today`} icon={Check} grad="gradient-primary" to="/tasks" />
-            <StatTile label="Challenges" value={String(data.challenges.length)} sub="active" icon={Flame} grad="gradient-warm" to="/challenges" />
+            <StatTile label="Challenges" value={String(activeChallenges.length)} sub="active" icon={Flame} grad="gradient-warm" to="/challenges" />
           </div>
 
           {/* filter pills + task list — matching reference card style */}
@@ -418,6 +473,31 @@ function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+
+            {/* Activity stream — recent completions */}
+            <div className="mt-4 border-t border-white/5 pt-4">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Recent activity</div>
+              {activityItems.length === 0 ? (
+                <p className="py-2 text-center text-xs text-muted-foreground">Nothing logged yet — complete a task or challenge.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {activityItems.map((a) => (
+                    <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                      <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
+                        {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm">
+                          <span className="text-muted-foreground">{a.kind === "challenge" ? "Challenge completed" : "Task done"} · </span>
+                          <span className="font-medium">{a.title}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{bnRelative(a.at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
 
           {/* Challenges + Quick income/expense */}
@@ -432,21 +512,28 @@ function Dashboard() {
                 </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
-              {data.challenges.length === 0 ? (
+              {activeChallenges.length === 0 ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">No active challenges.</p>
               ) : (
                 <ul className="space-y-2">
-                  {data.challenges.slice(0, 4).map((c: any) => {
+                  {activeChallenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
                     const done = c.status === "completed";
+                    const busy = pendingChallenges.has(c.id);
                     return (
-                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""}`}>
-                        <Checkbox
-                          checked={done}
-                          onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
-                          disabled={toggleChallenge.isPending}
-                        />
+                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
+                        {busy ? (
+                          <span className="grid h-4 w-4 place-items-center">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                          </span>
+                        ) : (
+                          <Checkbox
+                            checked={done}
+                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
+                            disabled={busy}
+                          />
+                        )}
                         <span className={`flex-1 truncate text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{c.title}</span>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
                       </li>
