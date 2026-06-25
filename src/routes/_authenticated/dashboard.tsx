@@ -144,8 +144,7 @@ function Dashboard() {
     mutationFn: async (title: string) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
-      const { error } = await supabase.from("ideas").insert({ user_id: u.user.id, title });
-      if (error) throw error;
+      await runOrQueue({ kind: "idea.create", userId: u.user.id, title });
     },
     onSuccess: () => {
       setIdeaInput("");
@@ -316,14 +315,13 @@ function Dashboard() {
       if (!amount || amount <= 0) throw new Error("Enter a valid amount");
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
-      const { error } = await supabase.from("transactions").insert({
+      await runOrQueue({ kind: "transaction.create", row: {
         user_id: u.user.id,
         type: txnType,
         amount,
         description: txnNote || null,
         txn_date: new Date().toISOString().slice(0, 10),
-      });
-      if (error) throw error;
+      } });
     },
     onSuccess: () => {
       setTxnAmount(""); setTxnNote("");
