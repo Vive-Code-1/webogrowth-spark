@@ -93,29 +93,43 @@ function Dashboard() {
     }),
   });
 
-  const startTimer = useMutation({
-    mutationFn: async () => {
+  const logHours = useMutation({
+    mutationFn: async ({ minutes, note }: { minutes: number; note: string }) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
+      const end = new Date();
+      const start = new Date(end.getTime() - minutes * 60000);
       const { error } = await supabase.from("work_sessions").insert({
-        user_id: u.user.id, start_time: new Date().toISOString(), is_running: true,
-        project_name: "Quick session",
+        user_id: u.user.id,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        is_running: false,
+        total_minutes: minutes,
+        project_name: note || "Manual entry",
       });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Timer started ▶"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      setHoursInput(""); setMinsInput(""); setSessionNote("");
+      toast.success("Work hours logged ✓");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to log"),
   });
 
-  const stopTimer = useMutation({
-    mutationFn: async (s: any) => {
-      const end = new Date();
-      const total = Math.max(0, diffMinutes(s.start_time, end) - s.dashboard_minutes);
-      const { error } = await supabase.from("work_sessions").update({
-        end_time: end.toISOString(), is_running: false, total_minutes: total,
-      }).eq("id", s.id);
+  const setTaskDate = useMutation({
+    mutationFn: async ({ id, date }: { id: string; date: Date | undefined }) => {
+      const { error } = await supabase.from("tasks").update({
+        due_date: date ? date.toISOString() : null,
+      }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Session saved ✓"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Date updated");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
   const visibleTasks = useMemo(() => {
