@@ -163,8 +163,6 @@ function Dashboard() {
         .eq("id", id);
       if (error) throw error;
     },
-      if (error) throw error;
-    },
     onMutate: async ({ id, done }) => {
       setPendingChallenges((p) => { const n = new Set(p); n.add(id); return n; });
       await qc.cancelQueries({ queryKey: ["dashboard"] });
