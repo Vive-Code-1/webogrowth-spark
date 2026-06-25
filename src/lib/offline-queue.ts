@@ -28,7 +28,7 @@ function write(ops: QueuedOp[]) {
   try { window.dispatchEvent(new CustomEvent("wg:queue-changed", { detail: { size: ops.length } })); } catch {}
 }
 
-export function enqueue(op: Omit<QueuedOp, "id" | "ts"> & Partial<Pick<QueuedOp, "id" | "ts">>) {
+export function enqueue(op: NewOp) {
   const full = { id: crypto.randomUUID(), ts: Date.now(), ...op } as QueuedOp;
   write([...read(), full]);
   return full;
