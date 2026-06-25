@@ -55,6 +55,8 @@ function Dashboard() {
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
   const [ideasFilter, setIdeasFilter] = useState<IdeasFilter>("incomplete");
+  const [challengesFilter, setChallengesFilter] = useState<IdeasFilter>("incomplete");
+
   const [txnType, setTxnType] = useState<"income" | "expense">("income");
   const [txnAmount, setTxnAmount] = useState("");
   const [txnNote, setTxnNote] = useState("");
