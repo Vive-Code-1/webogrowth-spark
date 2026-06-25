@@ -337,6 +337,12 @@ function Dashboard() {
   const taskPct = Math.min(100, Math.round(doneToday / Number(target.target_tasks) * 100));
 
   const activeChallenges = data.challenges.filter((c: any) => c.status === "active");
+  // Show active first, then recently completed — so checkbox stays available to reopen
+  const visibleChallenges = [...data.challenges].sort((a: any, b: any) => {
+    if (a.status === "active" && b.status !== "active") return -1;
+    if (b.status === "active" && a.status !== "active") return 1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
 
   // Activity stream — recent completed tasks + completed challenges (last 10)
   const activityItems = useMemo(() => {
