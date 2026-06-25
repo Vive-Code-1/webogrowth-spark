@@ -379,16 +379,26 @@ function Dashboard() {
     return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
   });
 
-  // Activity stream — recent completed tasks + completed challenges (last 10)
+  // Activity stream — merges activity_log entries (challenge toggles with before/after)
+  // with recent task completions, newest first
   const activityItems = useMemo(() => {
+    const logged = (data.activity ?? []).map((a: any) => ({
+      id: `a-${a.id}`,
+      kind: a.entity_type === "challenge" ? "challenge" as const : "task" as const,
+      action: a.action as string,
+      from: a.from_state as string | null,
+      to: a.to_state as string | null,
+      title: a.title ?? "",
+      at: a.created_at as string,
+    }));
     const tasksDone = data.tasks
       .filter((t: any) => t.completed_at)
-      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.completed_at as string }));
-    const chalDone = data.challenges
-      .filter((c: any) => c.status === "completed")
-      .map((c: any) => ({ id: `c-${c.id}`, kind: "challenge" as const, title: c.title, at: (c.updated_at ?? c.created_at) as string }));
-    return [...tasksDone, ...chalDone].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
-  }, [data.tasks, data.challenges]);
+      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, action: "complete", from: "pending", to: "done", title: t.title, at: t.completed_at as string }));
+    // de-dupe activity_log challenge entries from challenges table fallback
+    return [...logged, ...tasksDone]
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, 8);
+  }, [data.tasks, data.activity]);
 
   // weekly hours chart (last 7 days)
   const weekData = Array.from({ length: 7 }, (_, i) => {
