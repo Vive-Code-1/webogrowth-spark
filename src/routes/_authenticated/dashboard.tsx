@@ -313,7 +313,62 @@ function Dashboard() {
               </>
             )}
           </section>
+
+          {/* Activity + Challenges row — below Today's tasks */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Activity — weekly hours area chart */}
+            <section className="glass-panel rounded-2xl p-5">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <h3 className="font-display font-semibold">Activity</h3>
+                  <div className="text-xs text-muted-foreground">{doneToday + data.tasks.filter((t: any) => t.completed_at && isThisMonth(t.completed_at)).length} tasks completed</div>
+                </div>
+                <Link to="/reports" className="inline-flex items-center gap-1 rounded-full gradient-blue px-3 py-1.5 text-xs font-medium text-white">Report <ArrowRight className="h-3 w-3" /></Link>
+              </div>
+              <div className="text-right text-xs font-bold text-info">{Math.round((todayMins / 60) * 10) / 10}h today</div>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weekData}>
+                    <defs>
+                      <linearGradient id="actg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6ab1ff" stopOpacity={0.6} />
+                        <stop offset="100%" stopColor="#6ab1ff" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="label" stroke="oklch(0.7 0 0)" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "oklch(0.18 0.04 265)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8 }} formatter={(v: any) => `${v}h`} />
+                    <Area type="monotone" dataKey="hours" stroke="#6ab1ff" strokeWidth={2} fill="url(#actg)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            {/* Challenges */}
+            <section className="glass-panel rounded-2xl p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display font-semibold">Challenges</h3>
+                <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
+              </div>
+              {data.challenges.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No active challenges.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {data.challenges.slice(0, 4).map((c: any) => {
+                    const u = urgencyLevel(c.deadline);
+                    const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
+                    return (
+                      <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                        <span className="truncate text-sm">{c.title}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
         </div>
+
 
         {/* RIGHT — side rail */}
         <div className="space-y-6">
