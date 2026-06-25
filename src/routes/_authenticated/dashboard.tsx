@@ -628,19 +628,23 @@ function Dashboard() {
                     const done = c.status === "completed";
                     const busy = pendingChallenges.has(c.id);
                     return (
-                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
-                        {busy ? (
-                          <span className="grid h-4 w-4 place-items-center">
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                          </span>
-                        ) : (
+                      <li key={c.id} aria-busy={busy} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 transition ${done ? "opacity-60" : ""} ${busy ? "ring-primary/40" : ""}`}>
+                        <label className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center cursor-pointer">
                           <Checkbox
                             checked={done}
-                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
+                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v, title: c.title })}
                             disabled={busy}
+                            aria-label={`${done ? "Reopen" : "Complete"} challenge: ${c.title}`}
+                            className={`transition ${busy ? "opacity-50" : ""}`}
                           />
-                        )}
+                          {busy && (
+                            <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                            </span>
+                          )}
+                        </label>
                         <span className={`flex-1 truncate text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{c.title}</span>
+                        {busy && <span className="text-[10px] text-primary">Saving…</span>}
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
                       </li>
                     );
