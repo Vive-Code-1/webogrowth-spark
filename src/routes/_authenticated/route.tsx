@@ -22,13 +22,16 @@ function HeaderAvatar() {
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
-      const { data: p } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", u.user.id).maybeSingle();
+      const [{ data: p }, { data: r }] = await Promise.all([
+        supabase.from("profiles").select("display_name, avatar_url").eq("id", u.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle(),
+      ]);
       let signed: string | null = null;
       if (p?.avatar_url) {
         const { data: s } = await supabase.storage.from("avatars").createSignedUrl(p.avatar_url, 3600);
         signed = s?.signedUrl ?? null;
       }
-      return { name: p?.display_name ?? u.user.email ?? "User", url: signed };
+      return { name: p?.display_name ?? u.user.email ?? "User", url: signed, isAdmin: !!r };
     },
   });
   const initial = (data?.name ?? "U").trim().charAt(0).toUpperCase();
@@ -40,7 +43,7 @@ function HeaderAvatar() {
       </Avatar>
       <div className="hidden pr-1 sm:block">
         <div className="text-xs font-semibold leading-none">{data?.name ?? "User"}</div>
-        <div className="mt-0.5 text-[10px] text-muted-foreground">Admin</div>
+        <div className="mt-0.5 text-[10px] text-muted-foreground">{data?.isAdmin ? "Admin" : "Member"}</div>
       </div>
     </Link>
   );

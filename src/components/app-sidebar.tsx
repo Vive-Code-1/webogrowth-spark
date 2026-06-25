@@ -3,8 +3,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon, Time04Icon, Wallet01Icon, Analytics01Icon,
   TaskDone01Icon, BulbIcon, MapsIcon, Fire03Icon,
-  Settings01Icon, Logout01Icon,
+  Settings01Icon, Logout01Icon, ShieldKeyIcon,
 } from "@hugeicons/core-free-icons";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -27,6 +28,7 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: isAdmin } = useIsAdmin();
 
   const signOut = async () => {
     await qc.cancelQueries();
@@ -114,6 +116,18 @@ export function AppSidebar() {
           {/* soft divider gradient */}
           <div className="mx-2 mb-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           <SidebarMenu className="gap-1.5">
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/admin"}
+                  tooltip="Admin"
+                  className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0"
+                >
+                  <Row it={{ title: "Admin", url: "/admin", icon: ShieldKeyIcon }} active={pathname === "/admin"} />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
