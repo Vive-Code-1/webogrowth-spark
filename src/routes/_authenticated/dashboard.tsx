@@ -204,13 +204,6 @@ function Dashboard() {
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         {/* LEFT — main */}
         <div className="space-y-6">
-          {/* quick action bar */}
-          <div className="flex items-center justify-end">
-            <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white transition hover:scale-[1.03]">
-              <HugeiconsIcon icon={PlusSignIcon} size={18} strokeWidth={2} /> New task
-            </Link>
-          </div>
-
           {/* top stats — 4 cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="Today's work" value={fmtMins(todayMins)} sub={`${fmtMins(monthMins)} this month`} icon={Clock} grad="gradient-blue" to="/time-tracking" />
@@ -226,8 +219,14 @@ function Dashboard() {
                 <h2 className="font-display text-lg font-semibold">Today's tasks</h2>
                 <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-white/10">{visibleTasks.length}</span>
               </div>
-              <Link to="/tasks" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">View all <ArrowRight className="h-3.5 w-3.5" /></Link>
+              <div className="flex items-center gap-2">
+                <Link to="/tasks" className="blue-pill inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-white transition hover:scale-[1.03]">
+                  <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} /> New task
+                </Link>
+                <Link to="/tasks" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">View all <ArrowRight className="h-3.5 w-3.5" /></Link>
+              </div>
             </div>
+
 
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Tabs value={filter} onValueChange={(v) => { setFilter(v as Filter); setSelected(new Set()); }}>
