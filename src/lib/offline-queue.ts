@@ -14,6 +14,9 @@ export type QueuedOp =
   | { id: string; kind: "work_session.create"; row: Record<string, any>; ts: number }
   | { id: string; kind: "transaction.create"; row: Record<string, any>; ts: number };
 
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+export type NewOp = DistributiveOmit<QueuedOp, "id" | "ts">;
+
 function read(): QueuedOp[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(KEY) ?? "[]") as QueuedOp[]; } catch { return []; }
