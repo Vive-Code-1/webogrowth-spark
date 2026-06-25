@@ -18,6 +18,21 @@ const urgencyClass: Record<string, string> = {
 };
 
 function Dashboard() {
+  const qc = useQueryClient();
+  const complete = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tasks").update({
+        status: "done", completed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Task completed 🎉");
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
