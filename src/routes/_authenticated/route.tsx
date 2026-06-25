@@ -68,13 +68,13 @@ function Layout() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <SidebarInset className="flex flex-1 flex-col">
+        <SidebarInset className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-md">
             <SidebarTrigger />
             <HeaderBreadcrumb />
             <HeaderAvatar />
           </header>
-          <main className="flex-1 p-4 md:p-8"><Outlet /></main>
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 md:p-8"><Outlet /></main>
         </SidebarInset>
       </div>
     </SidebarProvider>
