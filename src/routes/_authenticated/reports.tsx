@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtMoney, fmtMins, diffMinutes } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReportsSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({ meta: [{ title: "Monthly Report · WeboGrowth" }] }),
