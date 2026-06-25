@@ -447,7 +447,7 @@ function Dashboard() {
               <Link to="/ideas" className="text-xs text-primary hover:underline">All →</Link>
             </div>
             {data.ideas.length === 0 ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">No ideas yet. Capture one!</p>
+              <p className="py-3 text-center text-xs text-muted-foreground">No ideas yet. Capture one below!</p>
             ) : (
               <ul className="space-y-2">
                 {data.ideas.slice(0, 4).map((i: any) => (
@@ -458,6 +458,56 @@ function Dashboard() {
                 ))}
               </ul>
             )}
+            {/* Quick capture */}
+            <form
+              onSubmit={(e) => { e.preventDefault(); const v = ideaInput.trim(); if (v) addIdea.mutate(v); }}
+              className="mt-3 flex gap-2"
+            >
+              <Input
+                value={ideaInput}
+                onChange={(e) => setIdeaInput(e.target.value)}
+                placeholder="Capture a quick idea…"
+                className="h-9 bg-white/5 text-sm"
+              />
+              <Button type="submit" disabled={addIdea.isPending || !ideaInput.trim()} size="sm" className="h-9 gradient-warm text-white">
+                <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />
+              </Button>
+            </form>
+          </section>
+
+          {/* This month — snapshot to fill side rail */}
+          <section className="glass-panel rounded-2xl p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-full gradient-cool">
+                  <Wallet className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-display font-semibold">This month</h3>
+              </div>
+              <Link to="/reports" className="text-xs text-primary hover:underline">Report →</Link>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-white/[0.03] p-3 ring-1 ring-white/5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Hours</div>
+                <div className="mt-1 font-display text-lg font-bold">{fmtMins(monthMins)}</div>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] p-3 ring-1 ring-white/5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Net</div>
+                <div className={`mt-1 font-display text-lg font-bold ${monthNet >= 0 ? "text-success" : "text-destructive"}`}>{fmtMoney(monthNet)}</div>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] p-3 ring-1 ring-white/5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Income</div>
+                <div className="mt-1 text-sm font-semibold text-success">+{fmtMoney(monthIncome)}</div>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] p-3 ring-1 ring-white/5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Expense</div>
+                <div className="mt-1 text-sm font-semibold text-destructive">−{fmtMoney(monthExpense)}</div>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2 rounded-lg blue-highlight px-3 py-2 text-xs">
+              <Flame className="h-3.5 w-3.5 text-pink" />
+              <span className="text-muted-foreground">{data.plans.length} active plans · {data.tasks.filter((t:any)=>t.status!=="done").length} open tasks</span>
+            </div>
           </section>
         </div>
       </div>
