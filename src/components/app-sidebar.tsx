@@ -1,5 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, CheckSquare, Lightbulb, Map, Flame, Settings, LogOut, Sparkles } from "lucide-react";
+import {
+  LayoutDashboard, CheckSquare, Lightbulb, Map, Flame, Settings, LogOut,
+  Clock, Wallet, BarChart3,
+} from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -7,8 +10,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
-const items = [
+const main = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Time Tracking", url: "/time-tracking", icon: Clock },
+  { title: "Finance", url: "/finance", icon: Wallet },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
+];
+const work = [
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Ideas", url: "/ideas", icon: Lightbulb },
   { title: "Plans", url: "/plans", icon: Map },
@@ -27,30 +35,38 @@ export function AppSidebar() {
     navigate({ to: "/auth", replace: true });
   };
 
+  const renderItem = (it: { title: string; url: string; icon: any }) => (
+    <SidebarMenuItem key={it.url}>
+      <SidebarMenuButton asChild isActive={pathname === it.url} tooltip={it.title}>
+        <Link to={it.url}>
+          <it.icon className="h-4 w-4" />
+          <span>{it.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg gradient-primary">
-            <Sparkles className="h-4 w-4 text-white" />
+        <div className="flex items-center gap-2.5 px-2 py-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl gradient-blue glow-blue">
+            <span className="font-display text-base font-black text-white">W</span>
           </div>
-          <span className="font-display font-semibold group-data-[collapsible=icon]:hidden">WeboGrowth</span>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <div className="font-display text-base font-bold leading-none">WeboGrowth</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Personal HQ</div>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((it) => (
-                <SidebarMenuItem key={it.url}>
-                  <SidebarMenuButton asChild isActive={pathname === it.url} tooltip={it.title}>
-                    <Link to={it.url}><it.icon className="h-4 w-4" /><span>{it.title}</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupContent><SidebarMenu>{main.map(renderItem)}</SidebarMenu></SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Work</SidebarGroupLabel>
+          <SidebarGroupContent><SidebarMenu>{work.map(renderItem)}</SidebarMenu></SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
