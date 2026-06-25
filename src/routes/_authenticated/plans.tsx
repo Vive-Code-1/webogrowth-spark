@@ -70,7 +70,7 @@ function Plans() {
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
+      {isLoading ? <ListSkeleton title={false} /> : (
         <div className="space-y-4">
           {plans.length === 0 && <p className="text-muted-foreground">No plans yet.</p>}
           {plans.map((p) => (
