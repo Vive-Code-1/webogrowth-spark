@@ -45,7 +45,7 @@ function Plans() {
 
   const updateProgress = useMutation({
     mutationFn: async ({ id, progress }: { id: string; progress: number }) => {
-      const { error } = await supabase.from("plans").update({ progress, status: progress >= 100 ? "completed" : "in_progress" }).eq("id", id);
+      const { error } = await supabase.from("plans").update({ progress, status: progress >= 100 ? "completed" : "active" }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["plans"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
