@@ -98,7 +98,7 @@ export function AppSidebar() {
                         asChild
                         isActive={active}
                         tooltip={it.title}
-                        className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent"
+                        className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0"
                       >
                         <Row it={it} active={active} />
                       </SidebarMenuButton>
@@ -119,7 +119,7 @@ export function AppSidebar() {
                 asChild
                 isActive={pathname === "/settings"}
                 tooltip="Settings"
-                className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent"
+                className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0"
               >
                 <Row it={{ title: "Settings", url: "/settings", icon: Settings01Icon }} active={pathname === "/settings"} />
               </SidebarMenuButton>
@@ -128,7 +128,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 onClick={signOut}
                 tooltip="Log out"
-                className="group h-auto gap-3 rounded-2xl p-2 px-2 text-muted-foreground hover:bg-transparent hover:text-white"
+                className="group h-auto gap-3 rounded-2xl p-2 px-2 text-muted-foreground hover:bg-transparent hover:text-white group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#0d1530] ring-1 ring-white/5 group-hover:ring-white/15">
                   <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.8} className="text-white/80" />
