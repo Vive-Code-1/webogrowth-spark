@@ -191,17 +191,8 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* breadcrumb / date */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/dashboard" className="hover:text-foreground">Home</Link>
-        <span>/</span>
-        <span className="text-foreground">Dashboard</span>
-        <span className="mx-2">·</span>
-        <CalendarDays className="h-4 w-4" />
-        <span>{new Date().toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" })}</span>
-      </div>
-
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+
         {/* LEFT — main */}
         <div className="space-y-6">
           {/* top stats — 4 cards */}
