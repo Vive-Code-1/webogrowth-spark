@@ -103,7 +103,7 @@ function Reports() {
     URL.revokeObjectURL(url);
   };
 
-  if (!filtered) return <div className="text-muted-foreground">Loading...</div>;
+  if (!filtered) return <ReportsSkeleton />;
 
   const net = filtered.income - filtered.expense;
 
