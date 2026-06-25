@@ -352,7 +352,6 @@ function Dashboard() {
   }, [data, filter, sortDir]);
 
   if (isLoading || !data) {
-    const { DashboardSkeleton } = require("@/components/skeletons");
     return <DashboardSkeleton />;
   }
 
