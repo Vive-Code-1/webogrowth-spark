@@ -550,7 +550,8 @@ function Dashboard() {
           </section>
 
           {/* Activity — full width, larger */}
-          <section className="glass-panel rounded-2xl p-5">
+          <section className="blue-highlight rounded-2xl p-5">
+
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-lg font-semibold">Activity</h3>
