@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { runOrQueue, flushQueue, queueSize, isOffline } from "@/lib/offline-queue";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · WeboGrowth" }] }),
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 type Filter = "pending" | "completed" | "all";
 type SortDir = "asc" | "desc";
+type IdeasFilter = "incomplete" | "all";
 
 async function updateTaskStatus(ids: string[], done: boolean) {
   const { error } = await supabase
@@ -52,21 +54,25 @@ function Dashboard() {
   const [minsInput, setMinsInput] = useState("");
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
+  const [ideasFilter, setIdeasFilter] = useState<IdeasFilter>("incomplete");
   const [txnType, setTxnType] = useState<"income" | "expense">("income");
   const [txnAmount, setTxnAmount] = useState("");
   const [txnNote, setTxnNote] = useState("");
+  const [offline, setOffline] = useState<boolean>(isOffline());
+  const [pendingSync, setPendingSync] = useState<number>(queueSize());
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
+      const [tasks, plans, challenges, sessions, txns, target, ideas, activity] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
         supabase.from("challenges").select("*").order("deadline", { ascending: true }),
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
-        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(4),
+        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("activity_log").select("*").order("created_at", { ascending: false }).limit(20),
       ]);
       return {
         tasks: tasks.data ?? [],
@@ -76,6 +82,7 @@ function Dashboard() {
         txns: txns.data ?? [],
         target: target.data,
         ideas: ideas.data ?? [],
+        activity: activity.data ?? [],
       };
     },
   });
@@ -157,12 +164,9 @@ function Dashboard() {
   const [pendingIdeas, setPendingIdeas] = useState<Set<string>>(new Set());
 
   const toggleIdea = useMutation({
-    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase
-        .from("ideas")
-        .update({ status: done ? "converted" : "new" })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, done, title }: { id: string; done: boolean; title?: string }) => {
+      const r = await runOrQueue({ kind: "idea.toggle", entityId: id, done, title });
+      return r;
     },
     onMutate: async ({ id, done }) => {
       setPendingIdeas((p) => { const n = new Set(p); n.add(id); return n; });
@@ -179,9 +183,14 @@ function Dashboard() {
       });
       return { prev };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: (r, vars) => {
       qc.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+      if (r?.queued) {
+        setPendingSync(queueSize());
+        toast.success("Saved offline — will sync when online");
+      } else {
+        toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+      }
     },
     onError: (e: any, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
@@ -195,12 +204,9 @@ function Dashboard() {
 
 
   const toggleChallenge = useMutation({
-    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase
-        .from("challenges")
-        .update({ status: done ? "completed" : "active" })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, done, title }: { id: string; done: boolean; title?: string }) => {
+      const r = await runOrQueue({ kind: "challenge.toggle", entityId: id, done, title });
+      return r;
     },
     onMutate: async ({ id, done }) => {
       setPendingChallenges((p) => { const n = new Set(p); n.add(id); return n; });
@@ -219,9 +225,14 @@ function Dashboard() {
       });
       return { prev };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: (r, vars) => {
       qc.invalidateQueries({ queryKey: ["challenges"] });
-      toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+      if (r?.queued) {
+        setPendingSync(queueSize());
+        toast.success("Saved offline — will sync when online");
+      } else {
+        toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+      }
     },
     onError: (e: any, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
@@ -254,6 +265,9 @@ function Dashboard() {
           qc.invalidateQueries({ queryKey: ["dashboard"] });
           qc.invalidateQueries({ queryKey: ["tasks"] });
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "activity_log", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+        })
         .subscribe((status) => {
           if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && !cancelled) {
             if (channel) supabase.removeChannel(channel);
@@ -272,6 +286,30 @@ function Dashboard() {
       if (retry) clearTimeout(retry);
       if (channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [qc]);
+
+  // Offline queue: flush on reconnect + on mount; track online state
+  useEffect(() => {
+    const sync = async () => {
+      setOffline(isOffline());
+      if (!isOffline() && queueSize() > 0) {
+        const r = await flushQueue(() => setPendingSync(queueSize()));
+        setPendingSync(queueSize());
+        if (r.ok > 0) {
+          toast.success(`Synced ${r.ok} pending change${r.ok > 1 ? "s" : ""} ✓`);
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+        }
+      }
+    };
+    sync();
+    const onOnline = () => sync();
+    const onOffline = () => setOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
     };
   }, [qc]);
 
@@ -344,16 +382,26 @@ function Dashboard() {
     return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
   });
 
-  // Activity stream — recent completed tasks + completed challenges (last 10)
+  // Activity stream — merges activity_log entries (challenge toggles with before/after)
+  // with recent task completions, newest first
   const activityItems = useMemo(() => {
+    const logged = (data.activity ?? []).map((a: any) => ({
+      id: `a-${a.id}`,
+      kind: a.entity_type === "challenge" ? "challenge" as const : "task" as const,
+      action: a.action as string,
+      from: a.from_state as string | null,
+      to: a.to_state as string | null,
+      title: a.title ?? "",
+      at: a.created_at as string,
+    }));
     const tasksDone = data.tasks
       .filter((t: any) => t.completed_at)
-      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.completed_at as string }));
-    const chalDone = data.challenges
-      .filter((c: any) => c.status === "completed")
-      .map((c: any) => ({ id: `c-${c.id}`, kind: "challenge" as const, title: c.title, at: (c.updated_at ?? c.created_at) as string }));
-    return [...tasksDone, ...chalDone].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
-  }, [data.tasks, data.challenges]);
+      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, action: "complete", from: "pending", to: "done", title: t.title, at: t.completed_at as string }));
+    // de-dupe activity_log challenge entries from challenges table fallback
+    return [...logged, ...tasksDone]
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, 8);
+  }, [data.tasks, data.activity]);
 
   // weekly hours chart (last 7 days)
   const weekData = Array.from({ length: 7 }, (_, i) => {
@@ -377,6 +425,14 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {(offline || pendingSync > 0) && (
+        <div role="status" aria-live="polite" className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs ring-1 ${offline ? "bg-warning/10 text-warning ring-warning/30" : "bg-info/10 text-info ring-info/30"}`}>
+          <span className={`h-2 w-2 rounded-full ${offline ? "bg-warning animate-pulse" : "bg-info"}`} />
+          {offline
+            ? `Offline — changes are queued${pendingSync > 0 ? ` (${pendingSync} pending)` : ""} and will sync when you're back online.`
+            : `Syncing ${pendingSync} pending change${pendingSync > 1 ? "s" : ""}…`}
+        </div>
+      )}
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
 
         {/* LEFT — main */}
@@ -526,20 +582,33 @@ function Dashboard() {
                 <p className="py-2 text-center text-xs text-muted-foreground">Nothing logged yet — complete a task or challenge.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {activityItems.map((a) => (
-                    <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
-                      <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
-                        {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm">
-                          <span className="text-muted-foreground">{a.kind === "challenge" ? "Challenge completed" : "Task done"} · </span>
-                          <span className="font-medium">{a.title}</span>
+                  {activityItems.map((a: any) => {
+                    const isReopen = a.action === "reopen";
+                    const verb = a.kind === "challenge"
+                      ? (isReopen ? "Challenge reopened" : "Challenge completed")
+                      : (isReopen ? "Task reopened" : "Task done");
+                    return (
+                      <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                        <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
+                          {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
                         </div>
-                      </div>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">{bnRelative(a.at)}</span>
-                    </li>
-                  ))}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm">
+                            <span className="text-muted-foreground">{verb} · </span>
+                            <span className="font-medium">{a.title}</span>
+                          </div>
+                          {a.from && a.to && (
+                            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <span className="rounded bg-white/5 px-1.5 py-0.5">{a.from}</span>
+                              <ArrowRight className="h-2.5 w-2.5" />
+                              <span className={`rounded px-1.5 py-0.5 ${a.to === "completed" || a.to === "done" ? "bg-success/15 text-success" : "bg-info/15 text-info"}`}>{a.to}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-[10px] text-muted-foreground" title={new Date(a.at).toLocaleString()}>{bnRelative(a.at)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -567,19 +636,23 @@ function Dashboard() {
                     const done = c.status === "completed";
                     const busy = pendingChallenges.has(c.id);
                     return (
-                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
-                        {busy ? (
-                          <span className="grid h-4 w-4 place-items-center">
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                          </span>
-                        ) : (
+                      <li key={c.id} aria-busy={busy} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 transition ${done ? "opacity-60" : ""} ${busy ? "ring-primary/40" : ""}`}>
+                        <label className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center cursor-pointer">
                           <Checkbox
                             checked={done}
-                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
+                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v, title: c.title })}
                             disabled={busy}
+                            aria-label={`${done ? "Reopen" : "Complete"} challenge: ${c.title}`}
+                            className={`transition ${busy ? "opacity-50" : ""}`}
                           />
-                        )}
+                          {busy && (
+                            <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                            </span>
+                          )}
+                        </label>
                         <span className={`flex-1 truncate text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{c.title}</span>
+                        {busy && <span className="text-[10px] text-primary">Saving…</span>}
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
                       </li>
                     );
@@ -702,36 +775,60 @@ function Dashboard() {
               </div>
               <Link to="/ideas" className="text-xs text-primary hover:underline">All →</Link>
             </div>
-            {data.ideas.length === 0 ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">No ideas yet. Capture one below!</p>
-            ) : (
-              <ul className="space-y-2">
-                {data.ideas.slice(0, 4).map((i: any) => {
-                  const done = i.status === "converted";
-                  const busy = pendingIdeas.has(i.id);
-                  return (
-                    <li key={i.id} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
-                      {busy ? (
-                        <span className="mt-0.5 grid h-4 w-4 place-items-center">
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                        </span>
-                      ) : (
-                        <Checkbox
-                          className="mt-0.5"
-                          checked={done}
-                          onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v })}
-                          disabled={busy}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
-                        {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            {/* Filter toggle: incomplete vs all */}
+            <Tabs value={ideasFilter} onValueChange={(v) => setIdeasFilter(v as IdeasFilter)} className="mb-3">
+              <TabsList className="h-8 w-full rounded-full bg-white/5 p-1">
+                <TabsTrigger value="incomplete" className="flex-1 rounded-full text-[11px] data-[state=active]:gradient-warm data-[state=active]:text-white">
+                  Open ({data.ideas.filter((i: any) => i.status !== "converted").length})
+                </TabsTrigger>
+                <TabsTrigger value="all" className="flex-1 rounded-full text-[11px] data-[state=active]:bg-white/10">
+                  All ({data.ideas.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {(() => {
+              const filteredIdeas = ideasFilter === "incomplete"
+                ? data.ideas.filter((i: any) => i.status !== "converted")
+                : data.ideas;
+              if (filteredIdeas.length === 0) {
+                return <p className="py-3 text-center text-xs text-muted-foreground">
+                  {ideasFilter === "incomplete" ? "All ideas done 🎉" : "No ideas yet. Capture one below!"}
+                </p>;
+              }
+              return (
+                <ul className="space-y-2">
+                  {filteredIdeas.slice(0, 5).map((i: any) => {
+                    const done = i.status === "converted";
+                    const busy = pendingIdeas.has(i.id);
+                    return (
+                      <li key={i.id} aria-busy={busy} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 transition ${done ? "opacity-60" : ""} ${busy ? "ring-primary/40" : ""}`}>
+                        <label className="relative mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center cursor-pointer">
+                          <Checkbox
+                            checked={done}
+                            onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v, title: i.title })}
+                            disabled={busy}
+                            aria-label={`${done ? "Reopen" : "Mark done"} idea: ${i.title}`}
+                            className={`transition ${busy ? "opacity-50" : ""}`}
+                          />
+                          {busy && (
+                            <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                            </span>
+                          )}
+                        </label>
+                        <div className="min-w-0 flex-1">
+                          <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
+                          <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                            {i.tag && <span className="uppercase tracking-wider text-info">{i.tag}</span>}
+                            {busy && <span className="text-primary">Saving…</span>}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
             {/* Quick capture */}
             <form
               onSubmit={(e) => { e.preventDefault(); const v = ideaInput.trim(); if (v) addIdea.mutate(v); }}
