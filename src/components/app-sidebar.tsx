@@ -28,6 +28,7 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: isAdmin } = useIsAdmin();
 
   const signOut = async () => {
     await qc.cancelQueries();
