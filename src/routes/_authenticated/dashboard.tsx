@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 type Filter = "pending" | "completed" | "all";
 type SortDir = "asc" | "desc";
+type IdeasFilter = "incomplete" | "all";
 
 async function updateTaskStatus(ids: string[], done: boolean) {
   const { error } = await supabase
