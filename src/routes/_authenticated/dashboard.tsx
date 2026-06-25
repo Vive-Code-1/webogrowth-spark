@@ -88,6 +88,7 @@ function Dashboard() {
         activity: activity.data ?? [],
       };
     },
+    placeholderData: (prev) => prev,
   });
 
   const toggle = useMutation({
