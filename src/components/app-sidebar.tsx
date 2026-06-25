@@ -130,7 +130,7 @@ export function AppSidebar() {
                 tooltip="Log out"
                 className="group h-auto gap-3 rounded-2xl p-2 px-2 text-muted-foreground hover:bg-transparent hover:text-white group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center"
               >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#0d1530] ring-1 ring-white/5 group-hover:ring-white/15">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#0d1530] ring-1 ring-white/5 group-hover:ring-white/15 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
                   <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.8} className="text-white/80" />
                 </span>
                 <span className="text-sm font-medium group-data-[collapsible=icon]:hidden">Log out</span>
