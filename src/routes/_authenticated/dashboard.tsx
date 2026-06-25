@@ -512,21 +512,28 @@ function Dashboard() {
                 </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
-              {data.challenges.length === 0 ? (
+              {activeChallenges.length === 0 ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">No active challenges.</p>
               ) : (
                 <ul className="space-y-2">
-                  {data.challenges.slice(0, 4).map((c: any) => {
+                  {activeChallenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
                     const done = c.status === "completed";
+                    const busy = pendingChallenges.has(c.id);
                     return (
-                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""}`}>
-                        <Checkbox
-                          checked={done}
-                          onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
-                          disabled={toggleChallenge.isPending}
-                        />
+                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
+                        {busy ? (
+                          <span className="grid h-4 w-4 place-items-center">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                          </span>
+                        ) : (
+                          <Checkbox
+                            checked={done}
+                            onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
+                            disabled={busy}
+                          />
+                        )}
                         <span className={`flex-1 truncate text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{c.title}</span>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
                       </li>
