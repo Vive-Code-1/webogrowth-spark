@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Check, Clock, Play, Square, ArrowUpDown, Undo2, Flame, Wallet,
-  ArrowRight, CalendarDays,
+  Check, Clock, ArrowUpDown, Undo2, Flame, Wallet,
+  ArrowRight, CalendarDays, Lightbulb, Save,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,8 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { bnRelative, urgencyLevel } from "@/lib/format";
 import { fmtMoney, fmtMins, diffMinutes } from "@/lib/money";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · WeboGrowth" }] }),
