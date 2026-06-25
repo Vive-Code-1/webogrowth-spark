@@ -62,6 +62,7 @@ function Dashboard() {
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
+        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(4),
       ]);
       return {
         tasks: tasks.data ?? [],
@@ -70,6 +71,7 @@ function Dashboard() {
         sessions: sessions.data ?? [],
         txns: txns.data ?? [],
         target: target.data,
+        ideas: ideas.data ?? [],
       };
     },
   });
