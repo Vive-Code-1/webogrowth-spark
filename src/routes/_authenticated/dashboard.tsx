@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check, Clock, ArrowUpDown, Undo2, Flame, Wallet,
   ArrowRight, CalendarDays, Lightbulb, Save,
@@ -157,13 +157,42 @@ function Dashboard() {
       const { error } = await supabase.from("challenges").update({ status: done ? "completed" : "active" }).eq("id", id);
       if (error) throw error;
     },
+    onMutate: async ({ id, done }) => {
+      await qc.cancelQueries({ queryKey: ["dashboard"] });
+      const prev = qc.getQueryData<any>(["dashboard"]);
+      qc.setQueryData<any>(["dashboard"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          challenges: done
+            ? old.challenges.filter((c: any) => c.id !== id)
+            : old.challenges.map((c: any) => (c.id === id ? { ...c, status: "active" } : c)),
+        };
+      });
+      return { prev };
+    },
     onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["challenges"] });
       toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
+      toast.error(e?.message ?? "Failed");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["dashboard"] }),
   });
+
+  // Realtime sync — challenges updates from any device
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-challenges")
+      .on("postgres_changes", { event: "*", schema: "public", table: "challenges" }, () => {
+        qc.invalidateQueries({ queryKey: ["dashboard"] });
+        qc.invalidateQueries({ queryKey: ["challenges"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const addTxn = useMutation({
     mutationFn: async () => {
