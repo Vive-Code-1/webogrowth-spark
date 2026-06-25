@@ -64,14 +64,15 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
+      const [tasks, plans, challenges, sessions, txns, target, ideas, activity] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
         supabase.from("challenges").select("*").order("deadline", { ascending: true }),
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
-        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(4),
+        supabase.from("ideas").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("activity_log").select("*").order("created_at", { ascending: false }).limit(20),
       ]);
       return {
         tasks: tasks.data ?? [],
@@ -81,6 +82,7 @@ function Dashboard() {
         txns: txns.data ?? [],
         target: target.data,
         ideas: ideas.data ?? [],
+        activity: activity.data ?? [],
       };
     },
   });
