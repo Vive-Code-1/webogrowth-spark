@@ -48,15 +48,14 @@ function Dashboard() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [, force] = useState(0);
-
-  // tick every second for live timer display
-  useEffect(() => { const i = setInterval(() => force((x) => x + 1), 1000); return () => clearInterval(i); }, []);
+  const [hoursInput, setHoursInput] = useState("");
+  const [minsInput, setMinsInput] = useState("");
+  const [sessionNote, setSessionNote] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [tasks, plans, challenges, sessions, txns, target] = await Promise.all([
+      const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
         supabase.from("challenges").select("*").eq("status", "active").order("deadline", { ascending: true }),
