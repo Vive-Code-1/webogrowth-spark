@@ -557,11 +557,11 @@ function Dashboard() {
                 </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
-              {activeChallenges.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">No active challenges.</p>
+              {visibleChallenges.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No challenges yet.</p>
               ) : (
                 <ul className="space-y-2">
-                  {activeChallenges.slice(0, 4).map((c: any) => {
+                  {visibleChallenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
                     const done = c.status === "completed";
