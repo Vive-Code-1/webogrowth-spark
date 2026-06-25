@@ -133,6 +133,22 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  const addIdea = useMutation({
+    mutationFn: async (title: string) => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("not signed in");
+      const { error } = await supabase.from("ideas").insert({ user_id: u.user.id, title });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setIdeaInput("");
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success("Idea captured 💡");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
   const visibleTasks = useMemo(() => {
     const all = data?.tasks ?? [];
     const f = all.filter((t: any) => filter === "all" ? true : filter === "completed" ? t.status === "done" : t.status !== "done");
