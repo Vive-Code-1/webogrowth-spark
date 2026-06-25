@@ -3,8 +3,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon, Time04Icon, Wallet01Icon, Analytics01Icon,
   TaskDone01Icon, BulbIcon, MapsIcon, Fire03Icon,
-  Settings01Icon, Logout01Icon,
+  Settings01Icon, Logout01Icon, ShieldUserIcon,
 } from "@hugeicons/core-free-icons";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
