@@ -1,8 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Dashboard01Icon, Time04Icon, Wallet01Icon, Analytics01Icon,
-  TaskDone01Icon, Bulb01Icon, Maps01Icon, Fire03Icon,
+  DashboardSquare01Icon, Time04Icon, Wallet01Icon, Analytics01Icon,
+  TaskDone01Icon, BulbIcon, MapsIcon, Fire03Icon,
   Settings01Icon, Logout01Icon,
 } from "@hugeicons/core-free-icons";
 import {
@@ -13,15 +13,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const main = [
-  { title: "Dashboard", url: "/dashboard", icon: Dashboard01Icon },
+  { title: "Dashboard", url: "/dashboard", icon: DashboardSquare01Icon },
   { title: "Time Tracking", url: "/time-tracking", icon: Time04Icon },
   { title: "Finance", url: "/finance", icon: Wallet01Icon },
   { title: "Reports", url: "/reports", icon: Analytics01Icon },
 ];
 const work = [
   { title: "Tasks", url: "/tasks", icon: TaskDone01Icon },
-  { title: "Ideas", url: "/ideas", icon: Bulb01Icon },
-  { title: "Plans", url: "/plans", icon: Maps01Icon },
+  { title: "Ideas", url: "/ideas", icon: BulbIcon },
+  { title: "Plans", url: "/plans", icon: MapsIcon },
   { title: "Challenges", url: "/challenges", icon: Fire03Icon },
 ];
 
