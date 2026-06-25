@@ -152,8 +152,43 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
-  const visibleTasks = useMemo(() => {
-    const all = data?.tasks ?? [];
+  const toggleChallenge = useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await supabase.from("challenges").update({ status: done ? "completed" : "active" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["challenges"] });
+      toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const addTxn = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(txnAmount);
+      if (!amount || amount <= 0) throw new Error("Enter a valid amount");
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("not signed in");
+      const { error } = await supabase.from("transactions").insert({
+        user_id: u.user.id,
+        type: txnType,
+        amount,
+        note: txnNote || null,
+        txn_date: new Date().toISOString().slice(0, 10),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setTxnAmount(""); setTxnNote("");
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["finance"] });
+      toast.success(txnType === "income" ? "Income added ✓" : "Expense added ✓");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
     const f = all.filter((t: any) => filter === "all" ? true : filter === "completed" ? t.status === "done" : t.status !== "done");
     const s = [...f].sort((a: any, b: any) => {
       const av = a.due_date ? new Date(a.due_date).getTime() : Infinity;
