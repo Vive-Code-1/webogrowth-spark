@@ -767,36 +767,60 @@ function Dashboard() {
               </div>
               <Link to="/ideas" className="text-xs text-primary hover:underline">All →</Link>
             </div>
-            {data.ideas.length === 0 ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">No ideas yet. Capture one below!</p>
-            ) : (
-              <ul className="space-y-2">
-                {data.ideas.slice(0, 4).map((i: any) => {
-                  const done = i.status === "converted";
-                  const busy = pendingIdeas.has(i.id);
-                  return (
-                    <li key={i.id} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""} ${busy ? "animate-pulse" : ""}`}>
-                      {busy ? (
-                        <span className="mt-0.5 grid h-4 w-4 place-items-center">
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                        </span>
-                      ) : (
-                        <Checkbox
-                          className="mt-0.5"
-                          checked={done}
-                          onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v })}
-                          disabled={busy}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
-                        {i.tag && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-info">{i.tag}</div>}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            {/* Filter toggle: incomplete vs all */}
+            <Tabs value={ideasFilter} onValueChange={(v) => setIdeasFilter(v as IdeasFilter)} className="mb-3">
+              <TabsList className="h-8 w-full rounded-full bg-white/5 p-1">
+                <TabsTrigger value="incomplete" className="flex-1 rounded-full text-[11px] data-[state=active]:gradient-warm data-[state=active]:text-white">
+                  Open ({data.ideas.filter((i: any) => i.status !== "converted").length})
+                </TabsTrigger>
+                <TabsTrigger value="all" className="flex-1 rounded-full text-[11px] data-[state=active]:bg-white/10">
+                  All ({data.ideas.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {(() => {
+              const filteredIdeas = ideasFilter === "incomplete"
+                ? data.ideas.filter((i: any) => i.status !== "converted")
+                : data.ideas;
+              if (filteredIdeas.length === 0) {
+                return <p className="py-3 text-center text-xs text-muted-foreground">
+                  {ideasFilter === "incomplete" ? "All ideas done 🎉" : "No ideas yet. Capture one below!"}
+                </p>;
+              }
+              return (
+                <ul className="space-y-2">
+                  {filteredIdeas.slice(0, 5).map((i: any) => {
+                    const done = i.status === "converted";
+                    const busy = pendingIdeas.has(i.id);
+                    return (
+                      <li key={i.id} aria-busy={busy} className={`flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 transition ${done ? "opacity-60" : ""} ${busy ? "ring-primary/40" : ""}`}>
+                        <label className="relative mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center cursor-pointer">
+                          <Checkbox
+                            checked={done}
+                            onCheckedChange={(v) => toggleIdea.mutate({ id: i.id, done: !!v, title: i.title })}
+                            disabled={busy}
+                            aria-label={`${done ? "Reopen" : "Mark done"} idea: ${i.title}`}
+                            className={`transition ${busy ? "opacity-50" : ""}`}
+                          />
+                          {busy && (
+                            <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                            </span>
+                          )}
+                        </label>
+                        <div className="min-w-0 flex-1">
+                          <div className={`truncate text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{i.title}</div>
+                          <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                            {i.tag && <span className="uppercase tracking-wider text-info">{i.tag}</span>}
+                            {busy && <span className="text-primary">Saving…</span>}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
             {/* Quick capture */}
             <form
               onSubmit={(e) => { e.preventDefault(); const v = ideaInput.trim(); if (v) addIdea.mutate(v); }}
