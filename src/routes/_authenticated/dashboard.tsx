@@ -55,6 +55,8 @@ function Dashboard() {
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
   const [ideasFilter, setIdeasFilter] = useState<IdeasFilter>("incomplete");
+  const [challengesFilter, setChallengesFilter] = useState<IdeasFilter>("incomplete");
+
   const [txnType, setTxnType] = useState<"income" | "expense">("income");
   const [txnAmount, setTxnAmount] = useState("");
   const [txnNote, setTxnNote] = useState("");
@@ -626,11 +628,30 @@ function Dashboard() {
                 </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
-              {visibleChallenges.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground">No challenges yet.</p>
-              ) : (
+              <Tabs value={challengesFilter} onValueChange={(v) => setChallengesFilter(v as IdeasFilter)} className="mb-3">
+                <TabsList className="h-8 w-full rounded-full bg-white/5 p-1">
+                  <TabsTrigger value="incomplete" className="flex-1 rounded-full text-xs data-[state=active]:gradient-warm data-[state=active]:text-white">
+                    Open ({data.challenges.filter((c: any) => c.status !== "completed").length})
+                  </TabsTrigger>
+                  <TabsTrigger value="all" className="flex-1 rounded-full text-xs data-[state=active]:gradient-warm data-[state=active]:text-white">
+                    All ({data.challenges.length})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {(() => {
+                const filteredChallenges = challengesFilter === "incomplete"
+                  ? visibleChallenges.filter((c: any) => c.status !== "completed")
+                  : visibleChallenges;
+                if (filteredChallenges.length === 0) {
+                  return (
+                    <p className="py-4 text-center text-xs text-muted-foreground">
+                      {challengesFilter === "incomplete" ? "All challenges done 🔥" : "No challenges yet."}
+                    </p>
+                  );
+                }
+                return (
                 <ul className="space-y-2">
-                  {visibleChallenges.slice(0, 4).map((c: any) => {
+                  {filteredChallenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
                     const done = c.status === "completed";
@@ -658,8 +679,10 @@ function Dashboard() {
                     );
                   })}
                 </ul>
-              )}
+                );
+              })()}
             </section>
+
 
             {/* Quick income / expense */}
             <section className="glass-panel rounded-2xl p-5">
