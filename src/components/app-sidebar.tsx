@@ -62,7 +62,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0 p-3 group-data-[collapsible=icon]:p-1.5">
       <div className="glass-panel relative flex h-full flex-col overflow-hidden rounded-[28px] group-data-[collapsible=icon]:rounded-2xl">
         {/* subtle ambient glow */}
-        <div className="pointer-events-none absolute left-0 top-12 h-40 w-40 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+        <div className="pointer-events-none absolute left-2 top-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-info/10 blur-3xl" />
 
         <SidebarHeader className="relative">
