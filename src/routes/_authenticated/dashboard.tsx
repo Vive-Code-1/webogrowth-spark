@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Lightbulb, Flame, TrendingUp, Clock } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckSquare, Lightbulb, Flame, TrendingUp, Clock, Check } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { bnRelative, urgencyLevel } from "@/lib/format";
 
@@ -17,6 +18,21 @@ const urgencyClass: Record<string, string> = {
 };
 
 function Dashboard() {
+  const qc = useQueryClient();
+  const complete = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tasks").update({
+        status: "done", completed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Task completed 🎉");
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
@@ -82,8 +98,16 @@ function Dashboard() {
           ) : (
             <ul className="space-y-2">
               {pendingTasks.slice(0, 5).map((t) => (
-                <li key={t.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
-                  <div className="min-w-0">
+                <li key={t.id} className="flex items-center gap-3 rounded-xl bg-muted/50 px-3 py-2.5">
+                  <button
+                    onClick={() => complete.mutate(t.id)}
+                    disabled={complete.isPending}
+                    aria-label="Mark complete"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-muted-foreground/40 transition hover:border-success hover:bg-success/20"
+                  >
+                    <Check className="h-4 w-4 opacity-0 transition hover:opacity-100" />
+                  </button>
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{t.title}</div>
                     {t.due_date && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Clock className="h-3 w-3"/>{bnRelative(t.due_date)}</div>}
                   </div>
