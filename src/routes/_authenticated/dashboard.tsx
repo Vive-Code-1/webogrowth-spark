@@ -574,20 +574,33 @@ function Dashboard() {
                 <p className="py-2 text-center text-xs text-muted-foreground">Nothing logged yet — complete a task or challenge.</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {activityItems.map((a) => (
-                    <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
-                      <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
-                        {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm">
-                          <span className="text-muted-foreground">{a.kind === "challenge" ? "Challenge completed" : "Task done"} · </span>
-                          <span className="font-medium">{a.title}</span>
+                  {activityItems.map((a: any) => {
+                    const isReopen = a.action === "reopen";
+                    const verb = a.kind === "challenge"
+                      ? (isReopen ? "Challenge reopened" : "Challenge completed")
+                      : (isReopen ? "Task reopened" : "Task done");
+                    return (
+                      <li key={a.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+                        <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${a.kind === "challenge" ? "gradient-warm" : "gradient-cool"}`}>
+                          {a.kind === "challenge" ? <Flame className="h-3 w-3 text-white" /> : <Check className="h-3 w-3 text-white" />}
                         </div>
-                      </div>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">{bnRelative(a.at)}</span>
-                    </li>
-                  ))}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm">
+                            <span className="text-muted-foreground">{verb} · </span>
+                            <span className="font-medium">{a.title}</span>
+                          </div>
+                          {a.from && a.to && (
+                            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <span className="rounded bg-white/5 px-1.5 py-0.5">{a.from}</span>
+                              <ArrowRight className="h-2.5 w-2.5" />
+                              <span className={`rounded px-1.5 py-0.5 ${a.to === "completed" || a.to === "done" ? "bg-success/15 text-success" : "bg-info/15 text-info"}`}>{a.to}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-[10px] text-muted-foreground" title={new Date(a.at).toLocaleString()}>{bnRelative(a.at)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
