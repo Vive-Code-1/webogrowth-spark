@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Lightbulb, Flame, TrendingUp, Clock } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckSquare, Lightbulb, Flame, TrendingUp, Clock, Check } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { bnRelative, urgencyLevel } from "@/lib/format";
 
