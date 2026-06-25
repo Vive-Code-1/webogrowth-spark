@@ -350,7 +350,10 @@ function Dashboard() {
     return s;
   }, [data, filter, sortDir]);
 
-  if (isLoading || !data) return <div className="text-muted-foreground">Loading...</div>;
+  if (isLoading || !data) {
+    const { DashboardSkeleton } = require("@/components/skeletons");
+    return <DashboardSkeleton />;
+  }
 
   const today = startOfDay();
   // (live timer removed — hours are logged manually)
