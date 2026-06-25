@@ -46,6 +46,23 @@ function HeaderAvatar() {
   );
 }
 
+function HeaderBreadcrumb() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const seg = pathname.split("/").filter(Boolean).pop() ?? "dashboard";
+  const label = seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const today = new Date().toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+      <Link to="/dashboard" className="hover:text-foreground">Home</Link>
+      <span>/</span>
+      <span className="truncate text-foreground">{label}</span>
+      <span className="mx-1 hidden sm:inline">·</span>
+      <CalendarDays className="hidden h-4 w-4 sm:inline" />
+      <span className="hidden truncate sm:inline">{today}</span>
+    </div>
+  );
+}
+
 function Layout() {
   return (
     <SidebarProvider>
@@ -54,6 +71,7 @@ function Layout() {
         <SidebarInset className="flex flex-1 flex-col">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-md">
             <SidebarTrigger />
+            <HeaderBreadcrumb />
             <HeaderAvatar />
           </header>
           <main className="flex-1 p-4 md:p-8"><Outlet /></main>
