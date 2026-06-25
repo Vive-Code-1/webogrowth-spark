@@ -52,6 +52,9 @@ function Dashboard() {
   const [minsInput, setMinsInput] = useState("");
   const [sessionNote, setSessionNote] = useState("");
   const [ideaInput, setIdeaInput] = useState("");
+  const [txnType, setTxnType] = useState<"income" | "expense">("income");
+  const [txnAmount, setTxnAmount] = useState("");
+  const [txnNote, setTxnNote] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
@@ -145,6 +148,43 @@ function Dashboard() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["ideas"] });
       toast.success("Idea captured 💡");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const toggleChallenge = useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await supabase.from("challenges").update({ status: done ? "completed" : "active" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["challenges"] });
+      toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const addTxn = useMutation({
+    mutationFn: async () => {
+      const amount = parseFloat(txnAmount);
+      if (!amount || amount <= 0) throw new Error("Enter a valid amount");
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("not signed in");
+      const { error } = await supabase.from("transactions").insert({
+        user_id: u.user.id,
+        type: txnType,
+        amount,
+        description: txnNote || null,
+        txn_date: new Date().toISOString().slice(0, 10),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setTxnAmount(""); setTxnNote("");
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["finance"] });
+      toast.success(txnType === "income" ? "Income added ✓" : "Expense added ✓");
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
@@ -322,39 +362,45 @@ function Dashboard() {
             )}
           </section>
 
-          {/* Activity + Challenges row — below Today's tasks */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Activity — weekly hours area chart */}
-            <section className="glass-panel rounded-2xl p-5">
-              <div className="mb-2 flex items-center justify-between">
-                <div>
-                  <h3 className="font-display font-semibold">Activity</h3>
-                  <div className="text-xs text-muted-foreground">{doneToday + data.tasks.filter((t: any) => t.completed_at && isThisMonth(t.completed_at)).length} tasks completed</div>
-                </div>
+          {/* Activity — full width, larger */}
+          <section className="glass-panel rounded-2xl p-5">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-lg font-semibold">Activity</h3>
+                <div className="text-xs text-muted-foreground">{doneToday + data.tasks.filter((t: any) => t.completed_at && isThisMonth(t.completed_at)).length} tasks completed</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-info">{Math.round((todayMins / 60) * 10) / 10}h today</span>
                 <Link to="/reports" className="inline-flex items-center gap-1 rounded-full gradient-blue px-3 py-1.5 text-xs font-medium text-white">Report <ArrowRight className="h-3 w-3" /></Link>
               </div>
-              <div className="text-right text-xs font-bold text-info">{Math.round((todayMins / 60) * 10) / 10}h today</div>
-              <div className="h-32">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={weekData}>
-                    <defs>
-                      <linearGradient id="actg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6ab1ff" stopOpacity={0.6} />
-                        <stop offset="100%" stopColor="#6ab1ff" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="label" stroke="oklch(0.7 0 0)" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "oklch(0.18 0.04 265)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8 }} formatter={(v: any) => `${v}h`} />
-                    <Area type="monotone" dataKey="hours" stroke="#6ab1ff" strokeWidth={2} fill="url(#actg)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
+            </div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weekData}>
+                  <defs>
+                    <linearGradient id="actg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6ab1ff" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#6ab1ff" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="label" stroke="oklch(0.7 0 0)" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ background: "oklch(0.18 0.04 265)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8 }} formatter={(v: any) => `${v}h`} />
+                  <Area type="monotone" dataKey="hours" stroke="#6ab1ff" strokeWidth={2} fill="url(#actg)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
 
-            {/* Challenges */}
+          {/* Challenges + Quick income/expense */}
+          <div className="grid gap-6 md:grid-cols-2">
             <section className="glass-panel rounded-2xl p-5">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display font-semibold">Challenges</h3>
+                <div className="flex items-center gap-2">
+                  <div className="grid h-7 w-7 place-items-center rounded-full gradient-warm">
+                    <Flame className="h-4 w-4 text-white" />
+                  </div>
+                  <h3 className="font-display font-semibold">Challenges</h3>
+                </div>
                 <Link to="/challenges" className="text-xs text-primary hover:underline">All →</Link>
               </div>
               {data.challenges.length === 0 ? (
@@ -364,9 +410,15 @@ function Dashboard() {
                   {data.challenges.slice(0, 4).map((c: any) => {
                     const u = urgencyLevel(c.deadline);
                     const cls = u === "critical" ? "bg-destructive/20 text-destructive" : u === "urgent" ? "bg-pink/20 text-pink" : u === "warn" ? "bg-warning/20 text-warning" : "bg-info/20 text-info";
+                    const done = c.status === "completed";
                     return (
-                      <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
-                        <span className="truncate text-sm">{c.title}</span>
+                      <li key={c.id} className={`flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/5 ${done ? "opacity-60" : ""}`}>
+                        <Checkbox
+                          checked={done}
+                          onCheckedChange={(v) => toggleChallenge.mutate({ id: c.id, done: !!v })}
+                          disabled={toggleChallenge.isPending}
+                        />
+                        <span className={`flex-1 truncate text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{c.title}</span>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${cls}`}>{bnRelative(c.deadline)}</span>
                       </li>
                     );
@@ -374,7 +426,50 @@ function Dashboard() {
                 </ul>
               )}
             </section>
+
+            {/* Quick income / expense */}
+            <section className="glass-panel rounded-2xl p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="grid h-7 w-7 place-items-center rounded-full gradient-cool">
+                    <Wallet className="h-4 w-4 text-white" />
+                  </div>
+                  <h3 className="font-display font-semibold">Quick entry</h3>
+                </div>
+                <Link to="/finance" className="text-xs text-primary hover:underline">Finance →</Link>
+              </div>
+              <Tabs value={txnType} onValueChange={(v) => setTxnType(v as "income" | "expense")}>
+                <TabsList className="h-9 w-full rounded-full bg-white/5 p-1">
+                  <TabsTrigger value="income" className="flex-1 rounded-full text-xs data-[state=active]:gradient-cool data-[state=active]:text-white">Income</TabsTrigger>
+                  <TabsTrigger value="expense" className="flex-1 rounded-full text-xs data-[state=active]:gradient-warm data-[state=active]:text-white">Expense</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="mt-3 space-y-2">
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Amount (৳)"
+                  value={txnAmount}
+                  onChange={(e) => setTxnAmount(e.target.value)}
+                  className="h-10 bg-white/5"
+                />
+                <Input
+                  placeholder="Note (optional)"
+                  value={txnNote}
+                  onChange={(e) => setTxnNote(e.target.value)}
+                  className="h-10 bg-white/5"
+                />
+                <Button
+                  onClick={() => addTxn.mutate()}
+                  disabled={addTxn.isPending || !txnAmount}
+                  className={`w-full text-white ${txnType === "income" ? "gradient-cool" : "gradient-warm"}`}
+                >
+                  <Save className="mr-1.5 h-4 w-4" /> Add {txnType === "income" ? "income" : "expense"}
+                </Button>
+              </div>
+            </section>
           </div>
+
         </div>
 
 
