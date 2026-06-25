@@ -83,7 +83,7 @@ async function runOp(op: QueuedOp): Promise<void> {
     return;
   }
   if (op.kind === "task.update") {
-    const { error } = await supabase.from("tasks").update(op.patch).eq("id", op.entityId);
+    const { error } = await supabase.from("tasks").update(op.patch as any).eq("id", op.entityId);
     if (error) throw error;
     return;
   }
