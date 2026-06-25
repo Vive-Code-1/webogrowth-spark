@@ -173,7 +173,7 @@ function Dashboard() {
           ...old,
           challenges: old.challenges.map((c: any) =>
             c.id === id
-              ? { ...c, status: done ? "completed" : "active", completed_at: done ? new Date().toISOString() : null }
+              ? { ...c, status: done ? "completed" : "active", updated_at: new Date().toISOString() }
               : c
           ),
         };
