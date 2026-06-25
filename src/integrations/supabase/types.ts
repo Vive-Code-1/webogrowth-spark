@@ -88,6 +88,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_targets: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          target_date: string
+          target_hours: number
+          target_tasks: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          target_date?: string
+          target_hours?: number
+          target_tasks?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          target_date?: string
+          target_hours?: number
+          target_tasks?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ideas: {
         Row: {
           content: string | null
@@ -254,6 +287,93 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          txn_date: string
+          type: Database["public"]["Enums"]["txn_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          txn_date?: string
+          type: Database["public"]["Enums"]["txn_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          txn_date?: string
+          type?: Database["public"]["Enums"]["txn_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_sessions: {
+        Row: {
+          created_at: string
+          dashboard_minutes: number
+          end_time: string | null
+          id: string
+          is_running: boolean
+          notes: string | null
+          project_name: string | null
+          project_url: string | null
+          start_time: string
+          td_account: string | null
+          total_minutes: number
+          updated_at: string
+          user_id: string
+          work_date: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_minutes?: number
+          end_time?: string | null
+          id?: string
+          is_running?: boolean
+          notes?: string | null
+          project_name?: string | null
+          project_url?: string | null
+          start_time: string
+          td_account?: string | null
+          total_minutes?: number
+          updated_at?: string
+          user_id: string
+          work_date?: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_minutes?: number
+          end_time?: string | null
+          id?: string
+          is_running?: boolean
+          notes?: string | null
+          project_name?: string | null
+          project_url?: string | null
+          start_time?: string
+          td_account?: string | null
+          total_minutes?: number
+          updated_at?: string
+          user_id?: string
+          work_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -268,6 +388,7 @@ export type Database = {
       task_priority: "low" | "medium" | "high"
       task_status: "pending" | "in_progress" | "done"
       theme_pref: "dark" | "light" | "system"
+      txn_type: "income" | "expense"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -401,6 +522,7 @@ export const Constants = {
       task_priority: ["low", "medium", "high"],
       task_status: ["pending", "in_progress", "done"],
       theme_pref: ["dark", "light", "system"],
+      txn_type: ["income", "expense"],
     },
   },
 } as const
