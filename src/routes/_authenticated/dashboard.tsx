@@ -51,6 +51,7 @@ function Dashboard() {
   const [hoursInput, setHoursInput] = useState("");
   const [minsInput, setMinsInput] = useState("");
   const [sessionNote, setSessionNote] = useState("");
+  const [ideaInput, setIdeaInput] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
