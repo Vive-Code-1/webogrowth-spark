@@ -152,8 +152,47 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
-  // per-row in-flight tracking so each challenge has its own loading state
+  // per-row in-flight tracking so each challenge/idea has its own loading state
   const [pendingChallenges, setPendingChallenges] = useState<Set<string>>(new Set());
+  const [pendingIdeas, setPendingIdeas] = useState<Set<string>>(new Set());
+
+  const toggleIdea = useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await supabase
+        .from("ideas")
+        .update({ status: done ? "converted" : "new" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, done }) => {
+      setPendingIdeas((p) => { const n = new Set(p); n.add(id); return n; });
+      await qc.cancelQueries({ queryKey: ["dashboard"] });
+      const prev = qc.getQueryData<any>(["dashboard"]);
+      qc.setQueryData<any>(["dashboard"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          ideas: old.ideas.map((i: any) =>
+            i.id === id ? { ...i, status: done ? "converted" : "new" } : i
+          ),
+        };
+      });
+      return { prev };
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+    },
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
+      toast.error(e?.message ?? "Failed");
+    },
+    onSettled: (_d, _e, vars) => {
+      setPendingIdeas((p) => { const n = new Set(p); n.delete(vars.id); return n; });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
 
   const toggleChallenge = useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
