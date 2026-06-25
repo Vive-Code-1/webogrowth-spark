@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Check, Clock, Play, Square, Plus, ArrowUpDown, Undo2, Flame, Wallet,
-  Sparkles, ArrowRight, Bell, CalendarDays,
+  Check, Clock, Play, Square, ArrowUpDown, Undo2, Flame, Wallet,
+  ArrowRight, CalendarDays,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  PlusSignIcon, NoteEditIcon, SparklesIcon as HiSparkles, Notification01Icon,
+  PlusSignIcon, NoteEditIcon, Notification01Icon,
 } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
