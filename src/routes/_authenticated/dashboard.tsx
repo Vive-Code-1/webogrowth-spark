@@ -297,6 +297,19 @@ function Dashboard() {
   const hourPct = Math.min(100, Math.round((todayMins / 60) / Number(target.target_hours) * 100));
   const taskPct = Math.min(100, Math.round(doneToday / Number(target.target_tasks) * 100));
 
+  const activeChallenges = data.challenges.filter((c: any) => c.status === "active");
+
+  // Activity stream — recent completed tasks + completed challenges (last 10)
+  const activityItems = useMemo(() => {
+    const tasksDone = data.tasks
+      .filter((t: any) => t.completed_at)
+      .map((t: any) => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.completed_at as string }));
+    const chalDone = data.challenges
+      .filter((c: any) => c.status === "completed")
+      .map((c: any) => ({ id: `c-${c.id}`, kind: "challenge" as const, title: c.title, at: (c.updated_at ?? c.created_at) as string }));
+    return [...tasksDone, ...chalDone].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
+  }, [data.tasks, data.challenges]);
+
   // weekly hours chart (last 7 days)
   const weekData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i)); d.setHours(0,0,0,0);
