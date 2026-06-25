@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check, Clock, ArrowUpDown, Undo2, Flame, Wallet,
   ArrowRight, CalendarDays, Lightbulb, Save,
