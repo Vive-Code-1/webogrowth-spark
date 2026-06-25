@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { bnDate } from "@/lib/format";
+import { ListSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/plans")({
   head: () => ({ meta: [{ title: "Plans · WeboGrowth" }] }),
@@ -69,7 +70,7 @@ function Plans() {
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
+      {isLoading ? <ListSkeleton title={false} /> : (
         <div className="space-y-4">
           {plans.length === 0 && <p className="text-muted-foreground">No plans yet.</p>}
           {plans.map((p) => (

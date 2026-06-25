@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ListSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/ideas")({
   head: () => ({ meta: [{ title: "Ideas · WeboGrowth" }] }),
@@ -58,7 +59,7 @@ function Ideas() {
         </div>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
+      {isLoading ? <ListSkeleton title={false} /> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ideas.length === 0 && <p className="text-muted-foreground">No ideas yet.</p>}
           {ideas.map((i, idx) => (

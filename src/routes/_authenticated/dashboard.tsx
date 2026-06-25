@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardSkeleton } from "@/components/skeletons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { runOrQueue, flushQueue, queueSize, isOffline } from "@/lib/offline-queue";
@@ -87,6 +88,7 @@ function Dashboard() {
         activity: activity.data ?? [],
       };
     },
+    placeholderData: (prev) => prev,
   });
 
   const toggle = useMutation({
@@ -350,7 +352,9 @@ function Dashboard() {
     return s;
   }, [data, filter, sortDir]);
 
-  if (isLoading || !data) return <div className="text-muted-foreground">Loading...</div>;
+  if (isLoading || !data) {
+    return <DashboardSkeleton />;
+  }
 
   const today = startOfDay();
   // (live timer removed — hours are logged manually)

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { bnRelative } from "@/lib/format";
+import { ListSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · WeboGrowth" }] }),
@@ -80,7 +81,7 @@ function Tasks() {
         <Button type="submit" className="gradient-primary text-white"><Plus className="h-4 w-4 mr-1"/>Add</Button>
       </form>
 
-      {isLoading ? <p className="text-muted-foreground">Loading...</p> : (
+      {isLoading ? <ListSkeleton title={false} /> : (
         <div className="space-y-2">
           {tasks.length === 0 && <p className="text-muted-foreground">No tasks yet.</p>}
           {tasks.map((t) => {
