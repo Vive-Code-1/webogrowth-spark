@@ -62,7 +62,7 @@ function Dashboard() {
       const [tasks, plans, challenges, sessions, txns, target, ideas] = await Promise.all([
         supabase.from("tasks").select("*").order("due_date", { ascending: true }),
         supabase.from("plans").select("id, progress"),
-        supabase.from("challenges").select("*").eq("status", "active").order("deadline", { ascending: true }),
+        supabase.from("challenges").select("*").order("deadline", { ascending: true }),
         supabase.from("work_sessions").select("*").order("start_time", { ascending: false }),
         supabase.from("transactions").select("*").order("txn_date", { ascending: false }),
         supabase.from("daily_targets").select("*").eq("target_date", new Date().toISOString().slice(0,10)).maybeSingle(),
