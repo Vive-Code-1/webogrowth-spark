@@ -66,9 +66,9 @@ export function AppSidebar() {
         <div className="pointer-events-none absolute -bottom-20 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-info/10 blur-3xl" />
 
         <SidebarHeader className="relative">
-          <div className="flex items-center gap-2.5 px-2 py-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl">
-              <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div className="flex items-center gap-2.5 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+              <svg viewBox="0 0 32 32" className="h-7 w-7 group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="wglogo" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
                     <stop offset="0%" stopColor="#6ab1ff" />
