@@ -265,6 +265,9 @@ function Dashboard() {
           qc.invalidateQueries({ queryKey: ["dashboard"] });
           qc.invalidateQueries({ queryKey: ["tasks"] });
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "activity_log", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+        })
         .subscribe((status) => {
           if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && !cancelled) {
             if (channel) supabase.removeChannel(channel);
