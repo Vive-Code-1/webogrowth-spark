@@ -124,7 +124,7 @@ export function AppSidebar() {
                   tooltip="Admin"
                   className="h-auto p-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:!size-auto group-data-[collapsible=icon]:!p-0"
                 >
-                  <Row it={{ title: "Admin", url: "/admin", icon: ShieldUserIcon }} active={pathname === "/admin"} />
+                  <Row it={{ title: "Admin", url: "/admin", icon: ShieldKeyIcon }} active={pathname === "/admin"} />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
