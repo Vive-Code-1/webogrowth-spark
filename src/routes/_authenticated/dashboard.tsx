@@ -152,21 +152,30 @@ function Dashboard() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  // per-row in-flight tracking so each challenge has its own loading state
+  const [pendingChallenges, setPendingChallenges] = useState<Set<string>>(new Set());
+
   const toggleChallenge = useMutation({
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase.from("challenges").update({ status: done ? "completed" : "active" }).eq("id", id);
+      const { error } = await supabase
+        .from("challenges")
+        .update({ status: done ? "completed" : "active", completed_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
       if (error) throw error;
     },
     onMutate: async ({ id, done }) => {
+      setPendingChallenges((p) => { const n = new Set(p); n.add(id); return n; });
       await qc.cancelQueries({ queryKey: ["dashboard"] });
       const prev = qc.getQueryData<any>(["dashboard"]);
       qc.setQueryData<any>(["dashboard"], (old: any) => {
         if (!old) return old;
         return {
           ...old,
-          challenges: done
-            ? old.challenges.filter((c: any) => c.id !== id)
-            : old.challenges.map((c: any) => (c.id === id ? { ...c, status: "active" } : c)),
+          challenges: old.challenges.map((c: any) =>
+            c.id === id
+              ? { ...c, status: done ? "completed" : "active", completed_at: done ? new Date().toISOString() : null }
+              : c
+          ),
         };
       });
       return { prev };
@@ -179,19 +188,52 @@ function Dashboard() {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
       toast.error(e?.message ?? "Failed");
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["dashboard"] }),
+    onSettled: (_d, _e, vars) => {
+      setPendingChallenges((p) => { const n = new Set(p); n.delete(vars.id); return n; });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
   });
 
-  // Realtime sync — challenges updates from any device
+  // Realtime sync — challenges + tasks, scoped to current user, auto-resubscribe on drop
   useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-challenges")
-      .on("postgres_changes", { event: "*", schema: "public", table: "challenges" }, () => {
-        qc.invalidateQueries({ queryKey: ["dashboard"] });
-        qc.invalidateQueries({ queryKey: ["challenges"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (cancelled || !u.user) return;
+      const uid = u.user.id;
+      const filter = `user_id=eq.${uid}`;
+      channel = supabase
+        .channel(`dashboard-stream-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "challenges", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          qc.invalidateQueries({ queryKey: ["challenges"] });
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter }, () => {
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+        })
+        .subscribe((status) => {
+          if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && !cancelled) {
+            if (channel) supabase.removeChannel(channel);
+            channel = null;
+            retry = setTimeout(() => { if (!cancelled) connect(); }, 2000);
+          }
+        });
+    };
+
+    connect();
+    const onVisible = () => { if (document.visibilityState === "visible") qc.invalidateQueries({ queryKey: ["dashboard"] }); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      if (retry) clearTimeout(retry);
+      if (channel) supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [qc]);
 
   const addTxn = useMutation({
