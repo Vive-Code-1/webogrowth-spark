@@ -164,12 +164,9 @@ function Dashboard() {
   const [pendingIdeas, setPendingIdeas] = useState<Set<string>>(new Set());
 
   const toggleIdea = useMutation({
-    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase
-        .from("ideas")
-        .update({ status: done ? "converted" : "new" })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, done, title }: { id: string; done: boolean; title?: string }) => {
+      const r = await runOrQueue({ kind: "idea.toggle", entityId: id, done, title });
+      return r;
     },
     onMutate: async ({ id, done }) => {
       setPendingIdeas((p) => { const n = new Set(p); n.add(id); return n; });
@@ -186,9 +183,14 @@ function Dashboard() {
       });
       return { prev };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: (r, vars) => {
       qc.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+      if (r?.queued) {
+        setPendingSync(queueSize());
+        toast.success("Saved offline — will sync when online");
+      } else {
+        toast.success(vars.done ? "Idea marked done ✅" : "Idea reopened");
+      }
     },
     onError: (e: any, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
@@ -202,12 +204,9 @@ function Dashboard() {
 
 
   const toggleChallenge = useMutation({
-    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
-      const { error } = await supabase
-        .from("challenges")
-        .update({ status: done ? "completed" : "active" })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, done, title }: { id: string; done: boolean; title?: string }) => {
+      const r = await runOrQueue({ kind: "challenge.toggle", entityId: id, done, title });
+      return r;
     },
     onMutate: async ({ id, done }) => {
       setPendingChallenges((p) => { const n = new Set(p); n.add(id); return n; });
@@ -226,9 +225,14 @@ function Dashboard() {
       });
       return { prev };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: (r, vars) => {
       qc.invalidateQueries({ queryKey: ["challenges"] });
-      toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+      if (r?.queued) {
+        setPendingSync(queueSize());
+        toast.success("Saved offline — will sync when online");
+      } else {
+        toast.success(vars.done ? "Challenge completed 🔥" : "Challenge reopened");
+      }
     },
     onError: (e: any, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(["dashboard"], ctx.prev);
