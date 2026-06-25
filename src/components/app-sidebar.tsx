@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon, Time04Icon, Wallet01Icon, Analytics01Icon,
   TaskDone01Icon, BulbIcon, MapsIcon, Fire03Icon,
-  Settings01Icon, Logout01Icon, ShieldUserIcon,
+  Settings01Icon, Logout01Icon, ShieldKeyIcon,
 } from "@hugeicons/core-free-icons";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
