@@ -33,11 +33,8 @@ type SortDir = "asc" | "desc";
 type IdeasFilter = "incomplete" | "all";
 
 async function updateTaskStatus(ids: string[], done: boolean) {
-  const { error } = await supabase
-    .from("tasks")
-    .update({ status: done ? "done" : "pending", completed_at: done ? new Date().toISOString() : null })
-    .in("id", ids);
-  if (error) throw error;
+  const r = await runOrQueue({ kind: "task.toggle", entityIds: ids, done });
+  return r;
 }
 
 function startOfDay(d = new Date()) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -114,15 +111,14 @@ function Dashboard() {
       if (!u.user) throw new Error("not signed in");
       const end = new Date();
       const start = new Date(end.getTime() - minutes * 60000);
-      const { error } = await supabase.from("work_sessions").insert({
+      await runOrQueue({ kind: "work_session.create", row: {
         user_id: u.user.id,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         is_running: false,
         total_minutes: minutes,
         project_name: note || "Manual entry",
-      });
-      if (error) throw error;
+      } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -134,10 +130,7 @@ function Dashboard() {
 
   const setTaskDate = useMutation({
     mutationFn: async ({ id, date }: { id: string; date: Date | undefined }) => {
-      const { error } = await supabase.from("tasks").update({
-        due_date: date ? date.toISOString() : null,
-      }).eq("id", id);
-      if (error) throw error;
+      await runOrQueue({ kind: "task.update", entityId: id, patch: { due_date: date ? date.toISOString() : null } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -151,8 +144,7 @@ function Dashboard() {
     mutationFn: async (title: string) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
-      const { error } = await supabase.from("ideas").insert({ user_id: u.user.id, title });
-      if (error) throw error;
+      await runOrQueue({ kind: "idea.create", userId: u.user.id, title });
     },
     onSuccess: () => {
       setIdeaInput("");
@@ -323,14 +315,13 @@ function Dashboard() {
       if (!amount || amount <= 0) throw new Error("Enter a valid amount");
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("not signed in");
-      const { error } = await supabase.from("transactions").insert({
+      await runOrQueue({ kind: "transaction.create", row: {
         user_id: u.user.id,
         type: txnType,
         amount,
         description: txnNote || null,
         txn_date: new Date().toISOString().slice(0, 10),
-      });
-      if (error) throw error;
+      } });
     },
     onSuccess: () => {
       setTxnAmount(""); setTxnNote("");
