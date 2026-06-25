@@ -127,7 +127,7 @@ export async function flushQueue(onChange?: () => void): Promise<{ ok: number; f
 }
 
 /** Run op now if online, otherwise queue. Returns whether it was queued. */
-export async function runOrQueue(op: Omit<QueuedOp, "id" | "ts">): Promise<{ queued: boolean }> {
+export async function runOrQueue(op: NewOp): Promise<{ queued: boolean }> {
   if (isOffline()) {
     enqueue(op);
     return { queued: true };
