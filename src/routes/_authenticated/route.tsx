@@ -69,15 +69,15 @@ function HeaderBreadcrumb() {
 function Layout() {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex w-full min-h-screen">
         <AppSidebar />
-        <SidebarInset className="flex min-w-0 flex-1 flex-col">
+        <SidebarInset className="flex min-w-0 flex-1 flex-col !min-h-0">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-md">
             <SidebarTrigger />
             <HeaderBreadcrumb />
             <HeaderAvatar />
           </header>
-          <main className="min-w-0 flex-1 overflow-x-hidden p-4 md:p-8"><Outlet /></main>
+          <div className="min-w-0 flex-1 p-4 md:p-8"><Outlet /></div>
         </SidebarInset>
       </div>
     </SidebarProvider>
