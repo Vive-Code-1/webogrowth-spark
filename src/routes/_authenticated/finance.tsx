@@ -78,15 +78,15 @@ function Finance() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Finance</h1>
+    <div className="min-w-0 space-y-6 overflow-hidden">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="min-w-0">
+          <h1 className="truncate text-3xl font-bold sm:text-4xl">Finance</h1>
           <p className="mt-1 text-muted-foreground">আয় ও ব্যয় এন্ট্রি করুন — মাস শেষে নিজেই দেখবেন কতো সেভ হলো।</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
           <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px] glass-card border-0"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="glass-card w-full border-0 sm:w-[180px]"><SelectValue /></SelectTrigger>
             <SelectContent>{months.map((k) => <SelectItem key={k} value={k}>{monthLabel(k)}</SelectItem>)}</SelectContent>
           </Select>
           <AddTxnDialog open={open} setOpen={setOpen} />
@@ -102,7 +102,7 @@ function Finance() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* chart */}
-        <section className="glass-panel rounded-2xl p-5 lg:col-span-1">
+        <section className="glass-panel min-w-0 overflow-hidden rounded-2xl p-5 lg:col-span-1">
           <h2 className="mb-3 font-display text-lg font-semibold">Expense by category</h2>
           {expByCat.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">No expenses yet this month.</p>
@@ -137,14 +137,14 @@ function Finance() {
         </section>
 
         {/* list */}
-        <section className="glass-panel rounded-2xl p-5 lg:col-span-2">
+        <section className="glass-panel min-w-0 overflow-hidden rounded-2xl p-4 sm:p-5 lg:col-span-2">
           <h2 className="mb-3 font-display text-lg font-semibold">{monthLabel(month)} — Transactions</h2>
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">কোনো এন্ট্রি নেই। উপরে "Add" দিয়ে শুরু করুন।</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="min-w-0 space-y-2">
               {filtered.map((t) => (
-                <li key={t.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 ring-1 ring-white/5">
+                <li key={t.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 ring-1 ring-white/5 sm:flex sm:items-center">
                   <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${t.type === "income" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>
                     {t.type === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                   </div>
@@ -154,12 +154,19 @@ function Finance() {
                       <span className="capitalize">{t.category}</span> · {new Date(t.txn_date).toLocaleDateString("en-GB")}
                     </div>
                   </div>
-                  <div className={`font-semibold ${t.type === "income" ? "text-success" : "text-destructive"}`}>
-                    {t.type === "income" ? "+" : "−"}{fmtMoney(t.amount)}
+                  <div className="col-start-2 flex min-w-0 items-center justify-between gap-2 sm:col-start-auto sm:ml-auto sm:shrink-0 sm:justify-end">
+                    <div className={`min-w-0 truncate text-sm font-semibold sm:text-base ${t.type === "income" ? "text-success" : "text-destructive"}`}>
+                      {t.type === "income" ? "+" : "−"}{fmtMoney(t.amount)}
+                    </div>
+                    <button
+                      onClick={() => remove.mutate(t.id)}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+                      aria-label="Delete"
+                      disabled={remove.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button onClick={() => remove.mutate(t.id)} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </li>
               ))}
             </ul>
