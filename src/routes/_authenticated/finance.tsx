@@ -78,7 +78,7 @@ function Finance() {
   });
 
   return (
-    <div className="min-w-0 space-y-6 overflow-hidden">
+    <div className="mx-auto w-full max-w-full min-w-0 space-y-6 overflow-hidden">
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
           <h1 className="truncate text-3xl font-bold sm:text-4xl">Finance</h1>
@@ -100,17 +100,17 @@ function Finance() {
         <FinanceStat label="Net savings" value={fmtMoney(net)} icon={Wallet} tone={net >= 0 ? "primary" : "danger"} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid min-w-0 gap-6 overflow-hidden lg:grid-cols-3">
         {/* chart */}
-        <section className="glass-panel min-w-0 overflow-hidden rounded-2xl p-5 lg:col-span-1">
+        <section className="glass-panel min-w-0 overflow-hidden rounded-2xl p-4 sm:p-5 lg:col-span-1">
           <h2 className="mb-3 font-display text-lg font-semibold">Expense by category</h2>
           {expByCat.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">No expenses yet this month.</p>
           ) : (
-            <div className="h-64">
+            <div className="h-56 min-w-0 overflow-hidden sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={expByCat} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={3}>
+                  <Pie data={expByCat} dataKey="value" nameKey="name" innerRadius="38%" outerRadius="68%" paddingAngle={3}>
                     {expByCat.map((_, i) => <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />)}
                   </Pie>
                   <Tooltip
@@ -123,14 +123,14 @@ function Finance() {
               </ResponsiveContainer>
             </div>
           )}
-          <div className="mt-3 space-y-1.5">
+          <div className="mt-3 min-w-0 space-y-1.5">
             {expByCat.map((c, i) => (
-              <div key={c.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
+              <div key={c.name} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs">
+                <div className="flex min-w-0 items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
-                  <span className="capitalize">{c.name}</span>
+                  <span className="min-w-0 truncate capitalize">{c.name}</span>
                 </div>
-                <span className="font-medium">{fmtMoney(c.value)}</span>
+                <span className="shrink-0 font-medium">{fmtMoney(c.value)}</span>
               </div>
             ))}
           </div>
