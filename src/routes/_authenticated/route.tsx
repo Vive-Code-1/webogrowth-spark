@@ -77,7 +77,7 @@ function Layout() {
             <HeaderBreadcrumb />
             <HeaderAvatar />
           </header>
-          <div className="min-w-0 flex-none p-4 pb-8 md:p-8"><Outlet /></div>
+          <div className="w-full min-w-0 max-w-full flex-none overflow-hidden px-3 py-4 pb-8 sm:px-4 md:p-8"><Outlet /></div>
         </SidebarInset>
       </div>
     </SidebarProvider>
